@@ -40,6 +40,9 @@ std::map<GLFWwindow*, Window*> glfwWindowMap;
 /** Current active window */
 Window* currentContext = nullptr;
 
+/** Next Window ID */
+int winCount = 0;
+
 // Event Loop Functions
 bool shouldClose();
 
@@ -72,11 +75,12 @@ int main(){
 	}
 
 	// Create Windows
-	Window* win1 = createWindow(800, 600, "Window 1");
-	createWindow(1280, 700, "Window 2", nullptr, win1);
+	Window* win1 = createWindow(500, 500, "Window 1");
+	createWindow(500, 500, "Window 2", nullptr, win1);
 
 	// Create resource objects
 	std::shared_ptr<ResourceManager> resourceManager(new ResourceManager());
+	resourceManager->loadShader("../shaders/imgui.vs", "../shaders/imgui.frag", nullptr, "imgui");
 	resourceManager->loadShader("../shaders/texture3D.vs", "../shaders/textured.frag", nullptr, "cube");
 	resourceManager->loadTexture("../textures/container.jpg", false, "container");
 
@@ -122,6 +126,8 @@ Window* createWindow(int width, int height, const char* title, GLFWmonitor* pMon
     Window* prevContext = currentContext;
 
     Window* window = new DemoWindow(width, height);
+
+    window->setID(winCount++);
 
     try{
     	window->create(title, pMonitor, share);
