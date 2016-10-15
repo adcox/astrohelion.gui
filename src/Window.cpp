@@ -1,9 +1,9 @@
 /**
- *  @file 
+ *  @file Window.cpp
  *	@brief 
  *
  *	@author Andrew Cox
- *	@version 
+ *	@version October 14, 2016
  *	@copyright GNU GPL v3.0
  */
  
@@ -26,7 +26,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with Astrohelion.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "Window.hpp"
+
+#include <stdexcept>
+#include <iostream>
+
+#include "imgui/imgui.h"
+#include "imgui/imgui_internal.h"
 
 #ifdef _WIN32
 	#undef APIENTRY
@@ -35,9 +40,8 @@
 	#include <GLFW/glfw3native.h>
 #endif
 
-#include <stdexcept>
-
-#include <iostream>
+#include "App.hpp"
+#include "Window.hpp"
 
 namespace astrohelion{
 namespace gui{
@@ -82,7 +86,31 @@ Window::Window(int id, int w, int h, const char* title, GLFWmonitor *pMonitor, W
 	create(title, pMonitor, share);
 }//====================================================
 
-Window::~Window(){}
+Window::~Window(){
+    if (imgui_VAO) glDeleteVertexArrays(1, &imgui_VAO);
+    if (imgui_VBO) glDeleteBuffers(1, &imgui_VBO);
+    if (imgui_EBO) glDeleteBuffers(1, &imgui_EBO);
+
+    imgui_VAO = imgui_VBO = imgui_EBO = 0;
+
+    ImGui::SetCurrentContext(imguiContext);
+
+    if(GLOBAL_APP->getMainWindow() != this){
+        // Set this pointer to NULL so ImGui doesn't delete any fonts we've loaded
+        imguiContext->IO.Fonts = nullptr;
+    }
+
+    ImGui::Shutdown();
+    // if(imguiContext){
+    //     delete imguiContext;
+    //     imguiContext = nullptr;
+    // }
+
+    ImGui::DestroyContext(imguiContext);
+
+    if(pWindow)
+        glfwDestroyWindow(pWindow);
+}//====================================================
 
 Window::Window(const Window &w){
 	copyMe(w);
@@ -126,11 +154,41 @@ void Window::create(const char* title, GLFWmonitor* pMonitor, Window* share){
 	glfwGetFramebufferSize(pWindow, &bufferWidth, &bufferHeight);
     glViewport(0, 0, bufferWidth, bufferHeight);	// make the buffer take up the entire screen
 
-    if(id == 0)
-    	imguiContext = ImGui::GetCurrentContext();
+    // Initialize Event Callbacks: Use Lambda functions instead of static functions declared somewhere global
+    glfwSetKeyCallback(pWindow, [](GLFWwindow* pWindow, int key, int scancode, int action, int mods){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+        currentWindow->handleKeyEvent(key, scancode, action, mods);
+    });
+
+    glfwSetCursorPosCallback(pWindow, [](GLFWwindow* pWindow, double xpos, double ypos){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+        currentWindow->handleMouseMoveEvent(xpos, ypos);
+    });
+
+    glfwSetScrollCallback(pWindow, [](GLFWwindow* pWindow, double xoffset, double yoffset){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+        currentWindow->handleMouseScrollEvent(xoffset, yoffset);
+    });
+
+    glfwSetMouseButtonCallback(pWindow, [](GLFWwindow* pWindow, int button, int action, int mods){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+        currentWindow->handleMouseButtonEvent(button, action, mods);
+    });
+
+    glfwSetCharCallback(pWindow, [](GLFWwindow* pWindow, unsigned int c){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+        currentWindow->handleCharCallback(c);
+    });
+
+    // Create a new ImGui context for this window
+    imguiContext = ImGui::CreateContext();
+
+    ImGui::SetCurrentContext(imguiContext);
+    ImGui_init();
 }//====================================================
 
-bool Window::ImGui_init(){
+void Window::ImGui_init(){
+    ImGui::SetCurrentContext(imguiContext);
     ImGuiIO& io = ImGui::GetIO();
     io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;	// Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
     io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
@@ -152,19 +210,19 @@ bool Window::ImGui_init(){
     io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
     io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
 
-    io.RenderDrawListsFn = nullptr;
-    // io.RenderDrawListsFn = ImGui_ImplGlfwGL3_RenderDrawLists;       	// Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
-    // io.SetClipboardTextFn = ImGui_ImplGlfwGL3_SetClipboardText;			// Could put these functions in the main script, use getCurrentContext() to determine which window to use	
-    // io.GetClipboardTextFn = ImGui_ImplGlfwGL3_GetClipboardText;
+    io.RenderDrawListsFn = nullptr;     // Set to NULL and call the function myself later
 
 #ifdef _WIN32
     io.ImeWindowHandle = glfwGetWin32Window(pWindow);
 #endif
-
-    return true;
 }//====================================================
 
-bool Window::ImGui_createDeviceObjects(){
+/**
+ *  @brief This function must be called after the resource manager is initialized
+ *  @details This function is, by default, called in the init() function
+ *  @throws runtime_error if the resource manager has not been initialized
+ */
+void Window::ImGui_createDeviceObjects(){
     // Backup GL state
     GLint last_texture, last_array_buffer, last_vertex_array;
     glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
@@ -173,6 +231,10 @@ bool Window::ImGui_createDeviceObjects(){
 
     glGenBuffers(1, &imgui_VBO);
     glGenBuffers(1, &imgui_EBO);
+
+    if(!appRM){
+        throw std::runtime_error("DemoWindow::init: Resource Manager has not been loaded; cannot init window");
+    }
 
     unsigned int shaderID = appRM->getShader("imgui").getID();
     unsigned int g_AttribLocationPosition = glGetAttribLocation(shaderID, "Position");
@@ -192,54 +254,12 @@ bool Window::ImGui_createDeviceObjects(){
     glVertexAttribPointer(g_AttribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)OFFSETOF(ImDrawVert, col));
 #undef OFFSETOF
 
-    createFontsTexture();
+    ImGui::GetIO().Fonts->TexID = (void *)(intptr_t)(appRM->getTexture("imguiFont").id);
 
     // Restore modified GL state
     glBindTexture(GL_TEXTURE_2D, last_texture);
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBindVertexArray(last_vertex_array);
-
-    return true;
-}//====================================================
-
-bool Window::createFontsTexture(){
-    // Build texture atlas
-    ImGuiIO& io = ImGui::GetIO();
-    unsigned char* pixels;
-    int w, h;
-    io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);   // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
-
-    // Upload texture to graphics system
-    GLint last_texture;
-    glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    glGenTextures(1, &imgui_fontTexture);
-    glBindTexture(GL_TEXTURE_2D, imgui_fontTexture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-    // Store our identifier
-    io.Fonts->TexID = (void *)(intptr_t)imgui_fontTexture;
-
-    // Restore state
-    glBindTexture(GL_TEXTURE_2D, last_texture);
-
-    return true;
-}//====================================================
-
-void Window::destruct(){
-	if (imgui_VAO) glDeleteVertexArrays(1, &imgui_VAO);
-    if (imgui_VBO) glDeleteBuffers(1, &imgui_VBO);
-    if (imgui_EBO) glDeleteBuffers(1, &imgui_EBO);
-
-    imgui_VAO = imgui_VBO = imgui_EBO = 0;
-
-    if (imgui_fontTexture){
-        glDeleteTextures(1, &imgui_fontTexture);
-        ImGui::GetIO().Fonts->TexID = 0;
-        imgui_fontTexture = 0;
-    }
-    ImGui::Shutdown();
 }//====================================================
 
 //-----------------------------------------------------
@@ -255,22 +275,41 @@ Window& Window::operator =(const Window &w){
 //      Event Loop Functions
 //-----------------------------------------------------
 
-void Window::init(){}
+/**
+ *  @brief Initialize the window
+ *  @details You MUST call this function if you wish to have 
+ *  a functioning ImGui context. I.e., if you override init(), 
+ *  you must call Window::init() from your derived class.
+ */
+void Window::init(){
+    ImGui_createDeviceObjects();
+}//====================================================
 
+/**
+ *  @brief A helper function that is called each frame to compute
+ *  performance metrics like frame time
+ */
 void Window::computeMetrics(){
 	GLfloat currentFrame = glfwGetTime();
 	frame_dt = currentFrame - lastFrameTime;
 	lastFrameTime = currentFrame;
 
-	ImGuiIO& io = ImGui::GetIO();
-	io.DeltaTime = frame_dt;
+    ImGui::SetCurrentContext(imguiContext);
+	ImGui::GetIO().DeltaTime = frame_dt;
 }//====================================================
 
+/**
+ *  @brief Perform updates before drawing
+ *  @details 
+ */
 void Window::update(){}
 
+/**
+ *  @brief Helper function to take care of ImGui setup before actually
+ *  rendering data
+ */
 void Window::preDraw(){
-	if (!imgui_fontTexture)
-        ImGui_createDeviceObjects();
+    ImGui::SetCurrentContext(imguiContext);
 
     ImGuiIO& io = ImGui::GetIO();
 
@@ -296,13 +335,30 @@ void Window::preDraw(){
     ImGui::NewFrame();
 }//====================================================
 
+/**
+ *  @brief Override this class to implement your own graphics
+ *  @details [long description]
+ */
 void Window::draw(){
 	
 }//====================================================
 
+/**
+ *  @brief Helper function to take care of ImGui rendering
+ */
 void Window::postDraw(){
 	ImGui::Render();
 	ImGui_RenderDrawLists(ImGui::GetDrawData());
+}//====================================================
+
+/**
+ *  @brief Call this function from the event loop to render this window
+ *  @details [long description]
+ */
+void Window::render(){
+    preDraw();
+    draw();
+    postDraw();
 }//====================================================
 
 /**
@@ -419,6 +475,7 @@ void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
 //-----------------------------------------------------
 
 void Window::handleCharCallback(unsigned int c){
+    ImGui::SetCurrentContext(imguiContext);
     ImGuiIO& io = ImGui::GetIO();
     if (c > 0 && c < 0x10000)
         io.AddInputCharacter(static_cast<unsigned short>(c));
@@ -427,6 +484,7 @@ void Window::handleCharCallback(unsigned int c){
 void Window::handleKeyEvent(int key, int scancode, int action, int mods){
 	(void)scancode;
 	(void)mods;		// Modifiers are not reliable across systems
+    ImGui::SetCurrentContext(imguiContext);
 
 	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
 		glfwSetWindowShouldClose(pWindow, GL_TRUE);
@@ -452,6 +510,7 @@ void Window::handleKeyEvent(int key, int scancode, int action, int mods){
 }//====================================================
 
 void Window::handleMouseMoveEvent(double xpos, double ypos){
+    ImGui::SetCurrentContext(imguiContext);
     ImGuiIO& io = ImGui::GetIO();	// TODO - Is getting a copy of this every time the mouse moves a good idea? The ImGui code was originally in the draw function
 	if(glfwGetWindowAttrib(pWindow, GLFW_FOCUSED)){
 		if(bMouse_firstFrame){
@@ -521,7 +580,6 @@ void Window::copyMe(const Window &w){
 	imgui_VAO = w.imgui_VAO;
 	imgui_VBO = w.imgui_VBO;
 	imgui_EBO = w.imgui_EBO;
-	imgui_fontTexture = w.imgui_fontTexture;
 
 	frame_dt = w.frame_dt;
 	lastFrameTime = w.lastFrameTime;

@@ -1,0 +1,222 @@
+/**
+ *  @file App.cpp
+ *	@brief 
+ *
+ *	@author Andrew Cox
+ *	@version October 14, 2016
+ *	@copyright GNU GPL v3.0
+ */
+ 
+/*
+ *	Astrohelion 
+ *	Copyright 2016, Andrew Cox; Protected under the GNU GPL v3.0
+ *	
+ *	This file is part of Astrohelion
+ *
+ *  Astrohelion is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  Astrohelion is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with Astrohelion.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <iostream>
+#include <stdexcept>
+
+#include <GL/glew.h>	// This header must be included BEFORE glfw3
+#include <GLFW/glfw3.h>
+
+#include <imgui/imgui.h>
+
+#include "App.hpp"
+#include "DemoWindow.hpp"
+#include "GLErrorHandling.hpp"
+#include "ResourceManager.hpp"
+#include "Window.hpp"
+
+namespace astrohelion{
+namespace gui{
+
+// Declare the global extern variable
+App* GLOBAL_APP = nullptr;
+
+App::App(){
+	GLOBAL_APP = this;
+}//====================================================
+
+App::~App(){
+	for(auto& window : windows){
+		delete window;
+	}
+
+	resourceMan->clear();
+	glfwTerminate();
+}//====================================================
+
+void App::init(){
+	glfwSetErrorCallback(GLFWErrorCallback);
+
+	if(glfwInit()){
+		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);					// OpenGL major version 3
+	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);					// OpenGL minor version 3 -> version 3.3
+	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	    // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	   	
+#if __APPLE__
+	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);			// Required on OS X
+#endif
+
+	}else{
+		throw std::runtime_error("Application: Failed to initialize glfw");
+	}
+
+	// Create resource manager; wait to load textures and shaders until a window has been created (and GLEW has been initialized)
+	resourceMan = std::shared_ptr<ResourceManager>(new ResourceManager());
+}//====================================================
+
+void App::run(){
+	// A window must be created (to initialize GLEW) before shaders and textures can be compiled
+	resourceMan->loadShader("../shaders/imgui.vs", "../shaders/imgui.frag", nullptr, "imgui");
+	
+	// Create a texture for ImGui Font
+	Texture2D tempTex;
+	ImGuiIO& io = ImGui::GetIO();
+	unsigned char* pixels;
+	int w, h;
+	io.Fonts->GetTexDataAsRGBA32(&pixels, &w, &h);   // Load as RGBA 32-bits for OpenGL3 demo because it is more likely to be compatible with user's existing shader.
+	tempTex.internalFormat = GL_RGBA;
+	tempTex.imageFormat = GL_RGBA;
+	tempTex.generate(w, h, pixels);
+
+	resourceMan->addTexture("imguiFont", tempTex);
+
+	// Initialize all windows
+	for(auto& window : windows){
+
+		// Set mainWindow if it hasn't been by the user
+		if(!mainWindow && windows.size() > 0)
+			setMainWindow(window);
+
+		makeContextCurrent(window);
+		window->setResourceManager(resourceMan);
+		window->init();
+
+		glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	}
+
+	while(!shouldClose()){
+		glfwPollEvents();
+
+		for(const auto& window : windows){
+			makeContextCurrent(window);
+
+			window->computeMetrics();
+			window->update();
+
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+			window->render();
+
+			glfwSwapBuffers(window->getWindowPtr());
+		}
+	}
+	
+	for(auto& window : windows){
+		delete window;
+	}
+
+}//====================================================
+
+Window* App::getMainWindow() const{ return mainWindow; }
+
+std::shared_ptr<ResourceManager> App::getResMan() const { return resourceMan; }
+
+void App::setMainWindow(Window* pWin){ mainWindow = pWin; }
+
+Window* App::createWindow(int width, int height, const char* title, GLFWmonitor* pMonitor, Window* share){
+    Window* prevContext = currentWindow;
+
+    Window* window = new DemoWindow(width, height);
+
+    window->setID(nextWinID++);
+
+    try{
+    	window->create(title, pMonitor, share);
+    }catch(std::runtime_error &e){
+    	delete window;
+    	return nullptr;
+    }
+
+	makeContextCurrent(window);    
+	
+	// Save the user pointer so we can retrieve the "owner" of the GLFW window
+	glfwSetWindowUserPointer(window->getWindowPtr(), window);
+
+    // Set any OpenGL options
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
+
+    checkForGLErrors("OpenGL Options Error");
+    
+    // Setup callbacks
+ //    glfwSetKeyCallback(window->getWindowPtr(), keyEventCallback);
+	// glfwSetCursorPosCallback(window->getWindowPtr(), mouseMoveCallback);
+	// glfwSetScrollCallback(window->getWindowPtr(), mouseScrollCallback);
+	// glfwSetMouseButtonCallback(window->getWindowPtr(), mouseButtonCallback);
+	// glfwSetCharCallback(window->getWindowPtr(), charCallback);
+
+    // add new window to the list
+    windows.push_back(window);
+
+    // Restore previous context
+    makeContextCurrent(prevContext);
+
+    return window;
+}//====================================================
+
+void App::makeContextCurrent(Window* pWin){
+	if(pWin){
+		glfwMakeContextCurrent(pWin->getWindowPtr());
+		currentWindow = pWin;
+	}else{
+		std::cout << "makeContextCurrent: Invalid window pointer!" << std::endl;
+	}
+}//====================================================
+
+bool App::shouldClose(){
+	if(windows.empty())
+		return true;
+
+	bool mainWindowClosed = false;
+
+	std::list<Window*> winToDelete;
+	for(const auto& win : windows){
+		if(glfwWindowShouldClose(win->getWindowPtr())){
+			winToDelete.push_back(win);
+
+			if(GLOBAL_APP->getMainWindow() == win)
+				mainWindowClosed = true;
+		}
+	}
+
+	if(mainWindowClosed)
+		winToDelete = windows;	// Delete all the windows if the main window is closed
+
+	if(!winToDelete.empty()){
+		for(auto& win : winToDelete){			
+			delete win;
+			windows.remove(win);
+		}
+	}
+
+	return windows.empty();
+}//====================================================
+}	// END of gui namespace
+}	// END of astrohelion namespace

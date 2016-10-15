@@ -48,10 +48,15 @@ public:
     ResourceManager();
     ~ResourceManager();
 
-    Shader& loadShader(const GLchar*, const GLchar*, const GLchar*, std::string);
+    void addShader(std::string, Shader);
+    void addTexture(std::string, Texture2D);
+    
     Shader& getShader(std::string);
-    Texture2D& loadTexture(const GLchar*, GLboolean, std::string);
     Texture2D& getTexture(std::string);
+
+    Shader& loadShader(const GLchar*, const GLchar*, const GLchar*, std::string);
+    Texture2D& loadTexture(const GLchar*, GLboolean, std::string);
+    
     void clear();
 protected:
     // Resource storage

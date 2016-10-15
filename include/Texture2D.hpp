@@ -36,9 +36,9 @@ class Texture2D{
 public:
     Texture2D();
     
-    void Generate(GLuint width, GLuint height, unsigned char* data);
+    void generate(GLuint width, GLuint height, unsigned char* data);
     
-    void Bind() const;
+    void bind() const;
 
     GLuint id = 0;          //!< Holds the ID of the texture object, used for all texture operations to reference to this particlar texture
     

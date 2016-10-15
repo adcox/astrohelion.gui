@@ -43,13 +43,12 @@ Texture2D::Texture2D(){
 
 /**
  *  @brief Generate a texture from image data
- *  @details [long description]
  * 
  *  @param w image width, pixels
  *  @param h image height, pixels
  *  @param data image data array
  */
-void Texture2D::Generate(GLuint w, GLuint h, unsigned char* data){
+void Texture2D::generate(GLuint w, GLuint h, unsigned char* data){
     width = w;
     height = h;
 
@@ -70,7 +69,7 @@ void Texture2D::Generate(GLuint w, GLuint h, unsigned char* data){
 /**
  *  @brief Binds the texture as the current active GL_TEXTURE_2D texture object
  */
-void Texture2D::Bind() const{
+void Texture2D::bind() const{
     glBindTexture(GL_TEXTURE_2D, id);
 }//====================================================
 

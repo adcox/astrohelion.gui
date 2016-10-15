@@ -27,6 +27,14 @@ ResourceManager::~ResourceManager(){
     clear();
 }//====================================================
 
+void ResourceManager::addShader(std::string name, Shader shader){
+    shaders[name] = shader;
+}//====================================================
+
+void ResourceManager::addTexture(std::string name, Texture2D tex){
+    textures[name] = tex;
+}//====================================================
+
 /**
  *  @brief Loads and generates a shader program from file
  *  @details A vertex, fragment
@@ -172,7 +180,7 @@ Texture2D ResourceManager::loadTextureFromFile(const GLchar *file, GLboolean alp
     unsigned char* image = SOIL_load_image(file, &width, &height, 0, texture.imageFormat == GL_RGBA ? SOIL_LOAD_RGBA : SOIL_LOAD_RGB);
     
     // Now generate texture
-    texture.Generate(width, height, image);
+    texture.generate(width, height, image);
     
     // And finally free image data
     SOIL_free_image_data(image);

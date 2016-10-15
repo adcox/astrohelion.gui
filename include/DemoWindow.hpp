@@ -54,7 +54,7 @@ public:
 	void update() override;
 	void draw() override;
 
-    void handleMouseMoveEvent(double, double) override;
+    // void handleMouseMoveEvent(double, double) override;
 protected:
 	// Create an cube
     GLfloat vertices[180] = {
@@ -114,6 +114,7 @@ protected:
       glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
 
+    float imgui_sliderVal = 0.0f;
     bool imgui_showTestWindow = false;
 	bool imgui_showAnotherWindow = false;
 	ImVec4 imgui_clearColor = ImColor(114, 144, 154);

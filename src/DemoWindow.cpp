@@ -31,8 +31,6 @@
 
 #include <cstdio>
 
-// #include "imgui/imgui_impl_glfw_gl3.h"
-
 namespace astrohelion{
 namespace gui{
 
@@ -57,9 +55,6 @@ void DemoWindow::init(){
         throw std::runtime_error("DemoWindow::init: Resource Manager has not been loaded; cannot init window");
     }
 
-	// Setup ImGui binding
-    // ImGui_ImplGlfwGL3_Init(pWindow, false);
-
     // Create a vertex array and a buffer to store the cube data
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
@@ -83,6 +78,8 @@ void DemoWindow::init(){
 }//====================================================
 
 void DemoWindow::update(){
+    Window::update();
+
 	if(bKeyPressed[GLFW_KEY_W])
 		camera.processKeyboard(CamMove_tp::FORWARD, frame_dt);
 	if(bKeyPressed[GLFW_KEY_S])
@@ -104,15 +101,13 @@ void DemoWindow::update(){
 }//====================================================
 
 void DemoWindow::draw(){
-
-	// ImGui_ImplGlfwGL3_NewFrame();
-
+    Window::draw();
+    
     // 1. Show a simple window
     // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
     {
-        static float f = 0.0f;
         ImGui::Text("Hello, world!");
-        ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
+        ImGui::SliderFloat("float", &imgui_sliderVal, 0.0f, 1.0f);
         ImGui::ColorEdit3("clear color", (float*)&imgui_clearColor);
         if (ImGui::Button("Test Window")) imgui_showTestWindow ^= 1;
         if (ImGui::Button("Another Window")) imgui_showAnotherWindow ^= 1;
@@ -141,7 +136,7 @@ void DemoWindow::draw(){
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, appRM->getTexture("container").id);
+    appRM->getTexture("container").bind();
     appRM->getShader("cube").setInteger("ourTexture1", 0);
 
     glBindVertexArray(VAO);
@@ -158,21 +153,11 @@ void DemoWindow::draw(){
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
     }
+
 	glBindVertexArray(0);
-
-    // Rendering
-    // ImGui::Render();
+    glBindTexture(GL_TEXTURE_2D, 0);
 }//====================================================
 
-void DemoWindow::handleMouseMoveEvent(double xpos, double ypos){
-	if(!ImGui::IsMouseHoveringAnyWindow()){
-		Window::handleMouseMoveEvent(xpos, ypos);
-		camera.processMouseMovement(mouse_xOffset, mouse_yOffset);
-
-		mouse_xOffset = 0;
-		mouse_yOffset = 0;
-	}
-}//====================================================
 
 }// END of gui namespace
 }// End of astrohelion namespace

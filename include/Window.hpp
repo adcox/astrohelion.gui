@@ -23,8 +23,6 @@
 #include "GL/glew.h"	// This header must be included BEFORE glfw3
 #include "GLFW/glfw3.h"
 
-#include "imgui/imgui.h"
-
 #include "ResourceUser.hpp"
 
 namespace astrohelion{
@@ -52,7 +50,6 @@ public:
 	Window(const Window&);
 
 	void create(const char*, GLFWmonitor*, Window*);
-	void destruct();
 
 	// Operators
 	Window& operator =(const Window&);
@@ -69,9 +66,7 @@ public:
 	virtual void init();
 	virtual void update();
 	void computeMetrics();
-	virtual void preDraw();
-	virtual void draw();
-	virtual void postDraw();
+	void render();
 
 	// Event Handling Functions
 	virtual void handleCharCallback(unsigned int);
@@ -86,7 +81,7 @@ protected:
 	GLFWwindow* pWindow = nullptr;
 	int id = -1;
 
-	void *imguiContext = nullptr;
+	struct ImGuiContext *imguiContext = nullptr;
 
 	std::string title = "Astrohelion Window";
 
@@ -109,7 +104,6 @@ protected:
 	GLfloat mouse_scrollXOffset = 0;
 	GLfloat mouse_scrollYOffset = 0;
 
-	GLuint imgui_fontTexture = 0;
 
 	unsigned int imgui_VBO = 0;		//!< Vertex Buffer Object for ImGui stuff
 	unsigned int imgui_VAO = 0;		//!< Vertex Array Object for ImGui stuff
@@ -117,10 +111,13 @@ protected:
 
 	// static int          g_ShaderHandle = 0, g_VertHandle = 0, g_FragHandle = 0;
 
-	bool createFontsTexture();
-	bool ImGui_init();
-	bool ImGui_createDeviceObjects();
-	void ImGui_RenderDrawLists(ImDrawData* draw_data);
+	void preDraw();
+	virtual void draw();
+	void postDraw();
+
+	void ImGui_init();
+	void ImGui_createDeviceObjects();
+	void ImGui_RenderDrawLists(struct ImDrawData* draw_data);
 	void copyMe(const Window&);
 
 private:
