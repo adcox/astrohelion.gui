@@ -105,7 +105,9 @@ int main(){
 
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			window->preDraw();
 			window->draw();
+			window->postDraw();
 
 			glfwSwapBuffers(window->getWindowPtr());
 		}
@@ -113,6 +115,7 @@ int main(){
 	
 	for(auto& window : windows){
 		glfwDestroyWindow(window->getWindowPtr());
+		window->destruct();
 		delete window;
 	}
 
@@ -136,6 +139,7 @@ Window* createWindow(int width, int height, const char* title, GLFWmonitor* pMon
     	if(window->getWindowPtr())
     		glfwDestroyWindow(window->getWindowPtr());
 
+    	window->destruct();
     	delete window;
     	return nullptr;
     }
@@ -189,6 +193,8 @@ bool shouldClose(){
 		for(auto& win : winToDelete){
 			glfwWindowMap.erase(win->getWindowPtr());
 			glfwDestroyWindow(win->getWindowPtr());
+			
+			win->destruct();
 			delete win;
 			windows.remove(win);
 		}

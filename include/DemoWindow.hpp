@@ -47,7 +47,7 @@ class DemoWindow : public Window{
 public:
     DemoWindow();
     DemoWindow(int, int);
-    DemoWindow(int, int, const char* title, GLFWmonitor *pMonitor = nullptr, Window* share = nullptr);
+    DemoWindow(int, int, int, const char* title, GLFWmonitor *pMonitor = nullptr, Window* share = nullptr);
 	~DemoWindow();
 
 	void init() override;

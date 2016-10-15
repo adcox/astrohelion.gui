@@ -176,9 +176,9 @@ void Font::initFont(const char* fontPath, float size){
 		}
 
 		// Generate texture
-		GLuint texture;
-		glGenTextures(1, &texture);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		FontChar fchar;
+		glGenTextures(1, &(fchar.texID));
+		glBindTexture(GL_TEXTURE_2D, fchar.texID);
 		glTexImage2D(
 			GL_TEXTURE_2D,
 			0,
@@ -198,12 +198,15 @@ void Font::initFont(const char* fontPath, float size){
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		// Store character for later use
-		FontChar fchar = {
-			texture,
-			glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
-			glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
-			static_cast<GLuint>(face->glyph->advance.x)
-		};
+		fchar.size = glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows);
+		fchar.bearing = glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top);
+		fchar.advance = static_cast<GLuint>(face->glyph->advance.x);
+		// FontChar fchar = {
+		// 	texture,
+		// 	glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
+		// 	glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
+		// 	static_cast<GLuint>(face->glyph->advance.x)
+		// };
 
 		characters.insert(std::pair<GLchar, FontChar>(c, fchar));
 	}

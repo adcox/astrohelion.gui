@@ -31,7 +31,7 @@
 
 #include <cstdio>
 
-#include "imgui/imgui_impl_glfw_gl3.h"
+// #include "imgui/imgui_impl_glfw_gl3.h"
 
 namespace astrohelion{
 namespace gui{
@@ -41,7 +41,7 @@ namespace gui{
 //-----------------------------------------------------
 DemoWindow::DemoWindow(){}
 DemoWindow::DemoWindow(int w, int h) : Window(w, h) {}
-DemoWindow::DemoWindow(int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share) : Window(w, h, title, pMonitor, share) {}
+DemoWindow::DemoWindow(int id, int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share) : Window(id, w, h, title, pMonitor, share) {}
 
 DemoWindow::~DemoWindow(){
 	if(pWindow){
@@ -51,14 +51,14 @@ DemoWindow::~DemoWindow(){
 }//====================================================
 
 void DemoWindow::init(){
+    Window::init();
+
     if(!appRM){
         throw std::runtime_error("DemoWindow::init: Resource Manager has not been loaded; cannot init window");
     }
 
-	glEnable(GL_DEPTH_TEST);
-
 	// Setup ImGui binding
-    ImGui_ImplGlfwGL3_Init(pWindow, false);
+    // ImGui_ImplGlfwGL3_Init(pWindow, false);
 
     // Create a vertex array and a buffer to store the cube data
     glGenVertexArrays(1, &VAO);
@@ -105,7 +105,7 @@ void DemoWindow::update(){
 
 void DemoWindow::draw(){
 
-	ImGui_ImplGlfwGL3_NewFrame();
+	// ImGui_ImplGlfwGL3_NewFrame();
 
     // 1. Show a simple window
     // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
@@ -138,6 +138,8 @@ void DemoWindow::draw(){
     appRM->getShader("cube").use();
 
     // Draw the Cube
+    glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, appRM->getTexture("container").id);
     appRM->getShader("cube").setInteger("ourTexture1", 0);
@@ -159,7 +161,7 @@ void DemoWindow::draw(){
 	glBindVertexArray(0);
 
     // Rendering
-    ImGui::Render();
+    // ImGui::Render();
 }//====================================================
 
 void DemoWindow::handleMouseMoveEvent(double xpos, double ypos){
