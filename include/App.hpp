@@ -41,7 +41,10 @@ class Window;
 class App{
 public: 
 	App();
+	App(const App&);
 	virtual ~App();
+
+	App& operator =(const App&);
 
 	Window* createWindow(int width, int height, const char* title, GLFWmonitor* pMonitor = nullptr, Window* share = nullptr);
 	void makeContextCurrent(Window*);
@@ -55,17 +58,26 @@ public:
 	void run();
 
 protected:
+
+	/** 
+	 * A pointer to the application's main window. If this window
+	 * is closed, the application will quit
+	 */
 	Window* mainWindow = nullptr;
+
+	/** A pointer to the window currently in focus */
 	Window* currentWindow = nullptr;
+
+	/** A shared pointer to a resource manager; only one is created for the application
+		and destruction is handled by the smart pointer object */
 	std::shared_ptr<ResourceManager> resourceMan = nullptr;
 
+	/** A list of all windows that belong to the application */
 	std::list<Window*> windows;
-
-	unsigned int nextWinID = 0;
 
 	bool shouldClose();
 
-
+	void copyMe(const App&);
 };
 
 extern App* GLOBAL_APP;

@@ -47,14 +47,14 @@ class DemoWindow : public Window{
 public:
     DemoWindow();
     DemoWindow(int, int);
-    DemoWindow(int, int, int, const char* title, GLFWmonitor *pMonitor = nullptr, Window* share = nullptr);
+    DemoWindow(int, int, const char* title, GLFWmonitor *pMonitor = nullptr, Window* share = nullptr);
 	~DemoWindow();
 
 	void init() override;
 	void update() override;
 	void draw() override;
 
-    // void handleMouseMoveEvent(double, double) override;
+    void handleMouseMoveEvent(double, double) override;
 protected:
 	// Create an cube
     GLfloat vertices[180] = {

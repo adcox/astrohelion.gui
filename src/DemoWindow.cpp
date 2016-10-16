@@ -39,7 +39,7 @@ namespace gui{
 //-----------------------------------------------------
 DemoWindow::DemoWindow(){}
 DemoWindow::DemoWindow(int w, int h) : Window(w, h) {}
-DemoWindow::DemoWindow(int id, int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share) : Window(id, w, h, title, pMonitor, share) {}
+DemoWindow::DemoWindow(int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share) : Window(w, h, title, pMonitor, share) {}
 
 DemoWindow::~DemoWindow(){
 	if(pWindow){
@@ -130,14 +130,14 @@ void DemoWindow::draw(){
         ImGui::ShowTestWindow(&imgui_showTestWindow);
     }
 
-    appRM->getShader("cube").use();
 
     // Draw the Cube
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    glDisable(GL_CULL_FACE);
     glActiveTexture(GL_TEXTURE0);
     appRM->getTexture("container").bind();
     appRM->getShader("cube").setInteger("ourTexture1", 0);
+    appRM->getShader("cube").use();
 
     glBindVertexArray(VAO);
     for(GLuint i = 0; i < 10; i++){
@@ -153,11 +153,15 @@ void DemoWindow::draw(){
 
         glDrawArrays(GL_TRIANGLES, 0, 36);
     }
-
 	glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    // glBindTexture(GL_TEXTURE_2D, 0);
 }//====================================================
 
+void DemoWindow::handleMouseMoveEvent(double xpos, double ypos){
+    Window::handleMouseMoveEvent(xpos, ypos);
+
+    // camera.processMouseMovement(xpos, ypos);
+}//====================================================
 
 }// END of gui namespace
 }// End of astrohelion namespace

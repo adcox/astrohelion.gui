@@ -45,13 +45,16 @@
 
 namespace astrohelion{
 namespace gui{
+
 //-----------------------------------------------------
 //      *structors
 //-----------------------------------------------------
 
-Window::Window(){
-
-}//====================================================
+/**
+ *  @brief Construct a default window
+ *  @details [long description]
+ */
+Window::Window(){}
 
 /**
  *  @brief Construct a window object
@@ -77,8 +80,7 @@ Window::Window(int w, int h){
  *  @param pMonitor Monitor pointer - see GLFW Window docs for more infor
  *  @param share another window to share resources with (optional)
  */
-Window::Window(int id, int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share){
-	this->id = id;
+Window::Window(int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share){
 	width = w;
 	height = h;
 	this->title = title;
@@ -86,6 +88,9 @@ Window::Window(int id, int w, int h, const char* title, GLFWmonitor *pMonitor, W
 	create(title, pMonitor, share);
 }//====================================================
 
+/**
+ *  @brief Destruct the window and free all allocated resources
+ */
 Window::~Window(){
     if (imgui_VAO) glDeleteVertexArrays(1, &imgui_VAO);
     if (imgui_VBO) glDeleteBuffers(1, &imgui_VBO);
@@ -101,10 +106,6 @@ Window::~Window(){
     }
 
     ImGui::Shutdown();
-    // if(imguiContext){
-    //     delete imguiContext;
-    //     imguiContext = nullptr;
-    // }
 
     ImGui::DestroyContext(imguiContext);
 
@@ -112,9 +113,17 @@ Window::~Window(){
         glfwDestroyWindow(pWindow);
 }//====================================================
 
+/**
+ *  @brief Copy the window
+ *  @param w A window reference
+ */
 Window::Window(const Window &w){
 	copyMe(w);
 }//====================================================
+
+//-----------------------------------------------------
+//      Initialization
+//-----------------------------------------------------
 
 /**
  *  @brief Create and initialize a GLFW window.
@@ -129,13 +138,9 @@ Window::Window(const Window &w){
  */
 void Window::create(const char* title, GLFWmonitor* pMonitor, Window* share){
 	this->title = title;
-	
-	if(this->id < 0){
-		throw std::runtime_error("Window::create: Must set Window ID before creating the window!");
-	}
 
 	if(share){
-		pWindow = glfwCreateWindow(width, height, title, pMonitor, share->getWindowPtr());
+		pWindow = glfwCreateWindow(width, height, title, pMonitor, share->getGLFWWindowPtr());
 	}else{
 		pWindow = glfwCreateWindow(width, height, title, pMonitor, nullptr);
 	}
@@ -146,7 +151,7 @@ void Window::create(const char* title, GLFWmonitor* pMonitor, Window* share){
 
 	glfwMakeContextCurrent(pWindow);
 
-	glewExperimental = GL_TRUE;
+	glewExperimental = GL_TRUE;    // Set this to true so GLEW knows to use a modern approach to retrieving function pointers and extensions
 	if(glewInit() != GLEW_OK){
 		throw std::runtime_error("Window::create: Failed to initialize GLEW");
 	}
@@ -155,28 +160,39 @@ void Window::create(const char* title, GLFWmonitor* pMonitor, Window* share){
     glViewport(0, 0, bufferWidth, bufferHeight);	// make the buffer take up the entire screen
 
     // Initialize Event Callbacks: Use Lambda functions instead of static functions declared somewhere global
-    glfwSetKeyCallback(pWindow, [](GLFWwindow* pWindow, int key, int scancode, int action, int mods){
-        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+
+    glfwSetWindowSizeCallback(pWindow, [](GLFWwindow *pWin, int w, int h){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
+        currentWindow->handleWindowSizeEvent(w, h);
+    });
+
+    glfwSetFramebufferSizeCallback(pWindow, [](GLFWwindow *pWin, int w, int h){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
+        currentWindow->handleFramebufferSizeEvent(w, h);
+    });
+
+    glfwSetKeyCallback(pWindow, [](GLFWwindow* pWin, int key, int scancode, int action, int mods){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
         currentWindow->handleKeyEvent(key, scancode, action, mods);
     });
 
-    glfwSetCursorPosCallback(pWindow, [](GLFWwindow* pWindow, double xpos, double ypos){
-        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+    glfwSetCursorPosCallback(pWindow, [](GLFWwindow* pWin, double xpos, double ypos){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
         currentWindow->handleMouseMoveEvent(xpos, ypos);
     });
 
-    glfwSetScrollCallback(pWindow, [](GLFWwindow* pWindow, double xoffset, double yoffset){
-        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+    glfwSetScrollCallback(pWindow, [](GLFWwindow* pWin, double xoffset, double yoffset){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
         currentWindow->handleMouseScrollEvent(xoffset, yoffset);
     });
 
-    glfwSetMouseButtonCallback(pWindow, [](GLFWwindow* pWindow, int button, int action, int mods){
-        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+    glfwSetMouseButtonCallback(pWindow, [](GLFWwindow* pWin, int button, int action, int mods){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
         currentWindow->handleMouseButtonEvent(button, action, mods);
     });
 
-    glfwSetCharCallback(pWindow, [](GLFWwindow* pWindow, unsigned int c){
-        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWindow));
+    glfwSetCharCallback(pWindow, [](GLFWwindow* pWin, unsigned int c){
+        Window *currentWindow = reinterpret_cast<Window*>(glfwGetWindowUserPointer(pWin));
         currentWindow->handleCharCallback(c);
     });
 
@@ -185,36 +201,6 @@ void Window::create(const char* title, GLFWmonitor* pMonitor, Window* share){
 
     ImGui::SetCurrentContext(imguiContext);
     ImGui_init();
-}//====================================================
-
-void Window::ImGui_init(){
-    ImGui::SetCurrentContext(imguiContext);
-    ImGuiIO& io = ImGui::GetIO();
-    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB;	// Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
-    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
-    io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
-    io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
-    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
-    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
-    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
-    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
-    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
-    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
-    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
-    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
-    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
-    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
-
-    io.RenderDrawListsFn = nullptr;     // Set to NULL and call the function myself later
-
-#ifdef _WIN32
-    io.ImeWindowHandle = glfwGetWin32Window(pWindow);
-#endif
 }//====================================================
 
 /**
@@ -260,6 +246,39 @@ void Window::ImGui_createDeviceObjects(){
     glBindTexture(GL_TEXTURE_2D, last_texture);
     glBindBuffer(GL_ARRAY_BUFFER, last_array_buffer);
     glBindVertexArray(last_vertex_array);
+}//====================================================
+
+void Window::ImGui_init(){
+    ImGui::SetCurrentContext(imguiContext);
+    ImGuiIO& io = ImGui::GetIO();
+    io.KeyMap[ImGuiKey_Tab] = GLFW_KEY_TAB; // Keyboard mapping. ImGui will use those indices to peek into the io.KeyDown[] array.
+    io.KeyMap[ImGuiKey_LeftArrow] = GLFW_KEY_LEFT;
+    io.KeyMap[ImGuiKey_RightArrow] = GLFW_KEY_RIGHT;
+    io.KeyMap[ImGuiKey_UpArrow] = GLFW_KEY_UP;
+    io.KeyMap[ImGuiKey_DownArrow] = GLFW_KEY_DOWN;
+    io.KeyMap[ImGuiKey_PageUp] = GLFW_KEY_PAGE_UP;
+    io.KeyMap[ImGuiKey_PageDown] = GLFW_KEY_PAGE_DOWN;
+    io.KeyMap[ImGuiKey_Home] = GLFW_KEY_HOME;
+    io.KeyMap[ImGuiKey_End] = GLFW_KEY_END;
+    io.KeyMap[ImGuiKey_Delete] = GLFW_KEY_DELETE;
+    io.KeyMap[ImGuiKey_Backspace] = GLFW_KEY_BACKSPACE;
+    io.KeyMap[ImGuiKey_Enter] = GLFW_KEY_ENTER;
+    io.KeyMap[ImGuiKey_Escape] = GLFW_KEY_ESCAPE;
+    io.KeyMap[ImGuiKey_A] = GLFW_KEY_A;
+    io.KeyMap[ImGuiKey_C] = GLFW_KEY_C;
+    io.KeyMap[ImGuiKey_V] = GLFW_KEY_V;
+    io.KeyMap[ImGuiKey_X] = GLFW_KEY_X;
+    io.KeyMap[ImGuiKey_Y] = GLFW_KEY_Y;
+    io.KeyMap[ImGuiKey_Z] = GLFW_KEY_Z;
+
+    io.RenderDrawListsFn = nullptr;     // Set to NULL and call the function myself later
+
+#ifdef _WIN32
+    io.ImeWindowHandle = glfwGetWin32Window(pWindow);
+#endif
+
+    io.DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
+    io.DisplayFramebufferScale = ImVec2(width > 0 ? (static_cast<float>(bufferWidth) / width) : 0, height > 0 ? (static_cast<float>(bufferHeight) / height) : 0);
 }//====================================================
 
 //-----------------------------------------------------
@@ -313,11 +332,6 @@ void Window::preDraw(){
 
     ImGuiIO& io = ImGui::GetIO();
 
-    // Setup display size (every frame to accommodate for window resizing)
-    // TODO - Move this to window_resized event handler
-    io.DisplaySize = ImVec2((float)width, (float)height);
-    io.DisplayFramebufferScale = ImVec2(width > 0 ? ((float)bufferWidth / width) : 0, height > 0 ? ((float)bufferHeight / height) : 0);
-
     // Setup inputs
     // TODO - may have some issues with my own mouse button listening and may need to implement similar code
     for (int i = 0; i < 3; i++){
@@ -326,7 +340,6 @@ void Window::preDraw(){
     }
 
     io.MouseWheel = mouse_scrollYOffset;
-    mouse_scrollYOffset = 0.0f;
 
     // Hide OS mouse cursor if ImGui is drawing it
     glfwSetInputMode(pWindow, GLFW_CURSOR, io.MouseDrawCursor ? GLFW_CURSOR_HIDDEN : GLFW_CURSOR_NORMAL);
@@ -337,7 +350,6 @@ void Window::preDraw(){
 
 /**
  *  @brief Override this class to implement your own graphics
- *  @details [long description]
  */
 void Window::draw(){
 	
@@ -349,6 +361,10 @@ void Window::draw(){
 void Window::postDraw(){
 	ImGui::Render();
 	ImGui_RenderDrawLists(ImGui::GetDrawData());
+
+    // Set these back to zero after all rendering and input operations are complete
+    mouse_scrollXOffset = 0;
+    mouse_scrollYOffset = 0;
 }//====================================================
 
 /**
@@ -361,6 +377,181 @@ void Window::render(){
     postDraw();
 }//====================================================
 
+//-----------------------------------------------------
+//      Event Handling Functions
+//-----------------------------------------------------
+
+/**
+ *  @brief Handle character events
+ *  @details Not sure what this is for, actually, but ImGui uses this
+ *  to call ImGuiIO.AddInputCharacter()
+ *  @param int character
+ */
+void Window::handleCharCallback(unsigned int c){
+    ImGui::SetCurrentContext(imguiContext);
+    ImGuiIO& io = ImGui::GetIO();
+    if (c > 0 && c < 0x10000)
+        io.AddInputCharacter(static_cast<unsigned short>(c));
+}//====================================================
+
+/**
+ *  @brief Handle key events (press, release, etc.)
+ *  @details This function records which keys are pressed and
+ *  calls the relevant action functions for ImGui
+ * 
+ *  @param key Key id
+ *  @param scancode Scancode (unused)
+ *  @param action Action: GLFW_PRESS, etc.
+ *  @param mods Modifiers; not reliable across systems (unused)
+ */
+void Window::handleKeyEvent(int key, int scancode, int action, int mods){
+	(void)scancode;
+	(void)mods;		// Modifiers are not reliable across systems
+    ImGui::SetCurrentContext(imguiContext);
+
+	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		glfwSetWindowShouldClose(pWindow, GL_TRUE);
+
+	ImGuiIO& io = ImGui::GetIO();
+
+	if(key >= 0 && key < 1024){
+		if(action == GLFW_PRESS){
+	        bKeyPressed[key] = true;
+	        io.KeysDown[key] = true;
+		}else if(action == GLFW_RELEASE){
+	        bKeyPressed[key] = false;
+	        io.KeysDown[key] = false;
+	    }
+	}
+
+	io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
+    io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
+    io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
+    io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
+}//====================================================
+
+/**
+ *  @brief Handle mouse movement events
+ *  @details This function computes the mouse movement distance
+ *  and updates ImGui with the current mouse position
+ * 
+ *  @param xpos x-coordinate of the mouse cursor, pixels
+ *  @param ypos y-coordinate of the mouse cursor, pixels
+ */
+void Window::handleMouseMoveEvent(double xpos, double ypos){
+    ImGui::SetCurrentContext(imguiContext);
+    ImGuiIO& io = ImGui::GetIO();	// TODO - Is getting a copy of this every time the mouse moves a good idea? The ImGui code was originally in the draw function
+	
+    if(glfwGetWindowAttrib(pWindow, GLFW_FOCUSED)){
+		if(bMouse_firstFrame){
+			mouse_lastX = xpos;
+			mouse_lastY = ypos;
+			bMouse_firstFrame = false;
+		}
+
+		io.MousePos = ImVec2(static_cast<float>(xpos), static_cast<float>(ypos));
+
+		mouse_xOffset = xpos - mouse_lastX;
+		mouse_yOffset = mouse_lastY - ypos;	// Reversed since y-coordinates go from bottom to top
+
+		mouse_lastX = xpos;
+		mouse_lastY = ypos;
+	}else{
+		io.MousePos = ImVec2(-1,-1);
+	}
+}//====================================================
+
+/**
+ *  @brief Handle mouse button events
+ * 
+ *  @param button Mouse button ID
+ *  @param action Action, i.e., GLFW_PRESS, etc.
+ *  @param mods Modifiers (unused)
+ */
+void Window::handleMouseButtonEvent(int button, int action, int mods){
+	(void) mods;
+
+	if(action == GLFW_PRESS && button >= 0 && button < 3)
+		bMousePressed[button] = true;
+}//====================================================
+
+/**
+ *  @brief Handle mouse scroll events
+ * 
+ *  @param xoffset Scroll distance in the horizontal direction
+ *  @param yoffset Scroll distance in the vertical direction
+ */
+void Window::handleMouseScrollEvent(double xoffset, double yoffset){
+	mouse_scrollXOffset = xoffset;
+	mouse_scrollYOffset = yoffset;	// Use fractional mouse wheel, 1.0 unit 5 lines.
+}//====================================================
+
+void Window::handleWindowSizeEvent(int w, int h){
+    width = w;
+    height = h;
+    
+    ImGui::SetCurrentContext(imguiContext);
+    ImGui::GetIO().DisplaySize = ImVec2(static_cast<float>(width), static_cast<float>(height));
+}//====================================================
+
+void Window::handleFramebufferSizeEvent(int w, int h){
+    glfwGetFramebufferSize(pWindow, &bufferWidth, &bufferHeight);
+    glViewport(0, 0, bufferWidth, bufferHeight);    // make the buffer take up the entire screen
+
+    ImGui::SetCurrentContext(imguiContext);
+    ImGui::GetIO().DisplayFramebufferScale = ImVec2(width > 0 ? (static_cast<float>(bufferWidth) / width) : 0, height > 0 ? (static_cast<float>(bufferHeight) / height) : 0);
+}//====================================================
+
+//-----------------------------------------------------
+//      Set and Get Functions
+//-----------------------------------------------------
+
+/**
+ *  @brief Retrieve the GLFW Window object pointer
+ *  @return the GLFW Window object pointer
+ */
+GLFWwindow* Window::getGLFWWindowPtr(){ return pWindow; }
+
+//-----------------------------------------------------
+//      Utility Functions
+//-----------------------------------------------------
+
+/**
+ *  @brief Copy the window object
+ *  @param w Reference to another window
+ */
+void Window::copyMe(const Window &w){
+	ResourceUser::copyMe(w);
+
+	pWindow = w.pWindow;
+	title = w.title;
+
+	imguiContext = w.imguiContext;
+	imgui_VAO = w.imgui_VAO;
+	imgui_VBO = w.imgui_VBO;
+	imgui_EBO = w.imgui_EBO;
+
+	frame_dt = w.frame_dt;
+	lastFrameTime = w.lastFrameTime;
+
+	width = w.width;
+	height = w.height;
+	bufferWidth = w.bufferWidth;
+	bufferHeight = w.bufferHeight;
+
+	std::copy(w.bKeyPressed, w.bKeyPressed+1024, bKeyPressed);
+	std::copy(w.bMousePressed, w.bMousePressed+3, bMousePressed);
+	bMouse_firstFrame = w.bMouse_firstFrame;
+
+	mouse_lastX = w.mouse_lastX;
+	mouse_lastY = w.mouse_lastY;
+	mouse_xOffset = w.mouse_xOffset;
+	mouse_yOffset = w.mouse_yOffset;
+	mouse_scrollXOffset = w.mouse_scrollXOffset;
+	mouse_scrollYOffset = w.mouse_scrollYOffset;
+
+}//====================================================
+
 /**
  *  @brief Main rendering function to provide to ImGui
  *  @details This is the main rendering function that you 
@@ -368,13 +559,13 @@ void Window::render(){
  *  'RenderDrawListsFn' in the ImGuiIO structure).
  *  
  *  If text or lines are blurry when integrating ImGui in your engine:
- * 	- in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
- * 	
+ *  - in your Render function, try translating your projection matrix by (0.5f,0.5f) or (0.375f,0.375f)
+ *  
  *  @param draw_data ImGui passes in data here to be drawn
  */
 void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
-	if(!appRM)
-		throw std::runtime_error("Window::ImGui_RenderDrawLists: Must initialize Resource Manager object before calling this function!");
+    if(!appRM)
+        throw std::runtime_error("Window::ImGui_RenderDrawLists: Must initialize Resource Manager object before calling this function!");
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
     ImGuiIO& io = ImGui::GetIO();
@@ -387,20 +578,20 @@ void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
     draw_data->ScaleClipRects(io.DisplayFramebufferScale);
 
     // Backup GL state
-    GLint last_program; 				glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
-    GLint last_texture; 				glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
-    GLint last_active_texture; 			glGetIntegerv(GL_ACTIVE_TEXTURE, &last_active_texture);
-    GLint last_array_buffer; 			glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
-    GLint last_element_array_buffer; 	glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
-    GLint last_vertex_array; 			glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
-    GLint last_blend_src; 				glGetIntegerv(GL_BLEND_SRC, &last_blend_src);
-    GLint last_blend_dst; 				glGetIntegerv(GL_BLEND_DST, &last_blend_dst);
-    GLint last_blend_equation_rgb; 		glGetIntegerv(GL_BLEND_EQUATION_RGB, &last_blend_equation_rgb);
-    GLint last_blend_equation_alpha; 	glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &last_blend_equation_alpha);
-    GLint last_viewport[4]; 			glGetIntegerv(GL_VIEWPORT, last_viewport);
-    GLboolean last_enable_blend = 		glIsEnabled(GL_BLEND);
-    GLboolean last_enable_cull_face = 	glIsEnabled(GL_CULL_FACE);
-    GLboolean last_enable_depth_test = 	glIsEnabled(GL_DEPTH_TEST);
+    GLint last_program;                 glGetIntegerv(GL_CURRENT_PROGRAM, &last_program);
+    GLint last_texture;                 glGetIntegerv(GL_TEXTURE_BINDING_2D, &last_texture);
+    GLint last_active_texture;          glGetIntegerv(GL_ACTIVE_TEXTURE, &last_active_texture);
+    GLint last_array_buffer;            glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &last_array_buffer);
+    GLint last_element_array_buffer;    glGetIntegerv(GL_ELEMENT_ARRAY_BUFFER_BINDING, &last_element_array_buffer);
+    GLint last_vertex_array;            glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &last_vertex_array);
+    GLint last_blend_src;               glGetIntegerv(GL_BLEND_SRC, &last_blend_src);
+    GLint last_blend_dst;               glGetIntegerv(GL_BLEND_DST, &last_blend_dst);
+    GLint last_blend_equation_rgb;      glGetIntegerv(GL_BLEND_EQUATION_RGB, &last_blend_equation_rgb);
+    GLint last_blend_equation_alpha;    glGetIntegerv(GL_BLEND_EQUATION_ALPHA, &last_blend_equation_alpha);
+    GLint last_viewport[4];             glGetIntegerv(GL_VIEWPORT, last_viewport);
+    GLboolean last_enable_blend =       glIsEnabled(GL_BLEND);
+    GLboolean last_enable_cull_face =   glIsEnabled(GL_CULL_FACE);
+    GLboolean last_enable_depth_test =  glIsEnabled(GL_DEPTH_TEST);
     GLboolean last_enable_scissor_test = glIsEnabled(GL_SCISSOR_TEST);
 
     // Setup render state: alpha-blending enabled, no face culling, no depth testing, scissor enabled
@@ -423,7 +614,7 @@ void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
 
     Shader &shade = appRM->getShader("imgui");
     
-    shade.setInteger("Texture", 0, true);	// true: use this shader
+    shade.setInteger("Texture", 0, true);   // true: use this shader
     shade.setMatrix4("ProjMtx", ortho);
     
     glBindVertexArray(imgui_VAO);
@@ -468,138 +659,6 @@ void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
     if (last_enable_scissor_test) glEnable(GL_SCISSOR_TEST); else glDisable(GL_SCISSOR_TEST);
     
     glViewport(last_viewport[0], last_viewport[1], (GLsizei)last_viewport[2], (GLsizei)last_viewport[3]);
-}//====================================================
-
-//-----------------------------------------------------
-//      Event Handling Functions
-//-----------------------------------------------------
-
-void Window::handleCharCallback(unsigned int c){
-    ImGui::SetCurrentContext(imguiContext);
-    ImGuiIO& io = ImGui::GetIO();
-    if (c > 0 && c < 0x10000)
-        io.AddInputCharacter(static_cast<unsigned short>(c));
-}//====================================================
-
-void Window::handleKeyEvent(int key, int scancode, int action, int mods){
-	(void)scancode;
-	(void)mods;		// Modifiers are not reliable across systems
-    ImGui::SetCurrentContext(imguiContext);
-
-	if(key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-		glfwSetWindowShouldClose(pWindow, GL_TRUE);
-
-	ImGuiIO& io = ImGui::GetIO();
-
-	if(key >= 0 && key < 1024){
-		if(action == GLFW_PRESS){
-	        bKeyPressed[key] = true;
-	        io.KeysDown[key] = true;
-		}else if(action == GLFW_RELEASE){
-	        bKeyPressed[key] = false;
-	        io.KeysDown[key] = false;
-	    }
-	}
-
-	io.KeyCtrl = io.KeysDown[GLFW_KEY_LEFT_CONTROL] || io.KeysDown[GLFW_KEY_RIGHT_CONTROL];
-    io.KeyShift = io.KeysDown[GLFW_KEY_LEFT_SHIFT] || io.KeysDown[GLFW_KEY_RIGHT_SHIFT];
-    io.KeyAlt = io.KeysDown[GLFW_KEY_LEFT_ALT] || io.KeysDown[GLFW_KEY_RIGHT_ALT];
-    io.KeySuper = io.KeysDown[GLFW_KEY_LEFT_SUPER] || io.KeysDown[GLFW_KEY_RIGHT_SUPER];
-
-	// std::cout << title << ": Key " << key << " action!" << std::endl;
-}//====================================================
-
-void Window::handleMouseMoveEvent(double xpos, double ypos){
-    ImGui::SetCurrentContext(imguiContext);
-    ImGuiIO& io = ImGui::GetIO();	// TODO - Is getting a copy of this every time the mouse moves a good idea? The ImGui code was originally in the draw function
-	if(glfwGetWindowAttrib(pWindow, GLFW_FOCUSED)){
-		if(bMouse_firstFrame){
-			mouse_lastX = xpos;
-			mouse_lastY = ypos;
-			bMouse_firstFrame = false;
-		}
-
-		io.MousePos = ImVec2(static_cast<float>(xpos), static_cast<float>(ypos));
-
-		mouse_xOffset = xpos - mouse_lastX;
-		mouse_yOffset = mouse_lastY - ypos;	// Reversed since y-coordinates go from bottom to top
-
-		mouse_lastX = xpos;
-		mouse_lastY = ypos;
-
-		std::cout << title << ": Mouse moved!" << std::endl;
-	}else{
-		io.MousePos = ImVec2(-1,-1);
-	}
-}//====================================================
-
-void Window::handleMouseButtonEvent(int button, int action, int mods){
-	(void) mods;
-
-	if(action == GLFW_PRESS && button >= 0 && button < 3)
-		bMousePressed[button] = true;
-}//====================================================
-
-void Window::handleMouseScrollEvent(double xoffset, double yoffset){
-	mouse_scrollXOffset = xoffset;
-	mouse_scrollYOffset = yoffset;	// Use fractional mouse wheel, 1.0 unit 5 lines.
-
-	std::cout << title << ": Mouse scrolled!" << std::endl;
-}//====================================================
-
-//-----------------------------------------------------
-//      Set and Get Functions
-//-----------------------------------------------------
-
-int Window::getID() const { return id; }
-
-GLFWwindow* Window::getWindowPtr(){ return pWindow; }
-
-void Window::setID(int id){ this->id = id; }
-
-const char* Window::getClipboardText() const{
-    return glfwGetClipboardString(pWindow);
-}//====================================================
-
-void Window::setClipboardText(const char* text){
-    glfwSetClipboardString(pWindow, text);
-}//====================================================
-
-//-----------------------------------------------------
-//      Utility Functions
-//-----------------------------------------------------
-
-void Window::copyMe(const Window &w){
-	ResourceUser::copyMe(w);
-
-	pWindow = w.pWindow;
-	id = w.id;
-	title = w.title;
-
-	imguiContext = w.imguiContext;
-	imgui_VAO = w.imgui_VAO;
-	imgui_VBO = w.imgui_VBO;
-	imgui_EBO = w.imgui_EBO;
-
-	frame_dt = w.frame_dt;
-	lastFrameTime = w.lastFrameTime;
-
-	width = w.width;
-	height = w.height;
-	bufferWidth = w.bufferWidth;
-	bufferHeight = w.bufferHeight;
-
-	std::copy(w.bKeyPressed, w.bKeyPressed+1024, bKeyPressed);
-	std::copy(w.bMousePressed, w.bMousePressed+3, bMousePressed);
-	bMouse_firstFrame = w.bMouse_firstFrame;
-
-	mouse_lastX = w.mouse_lastX;
-	mouse_lastY = w.mouse_lastY;
-	mouse_xOffset = w.mouse_xOffset;
-	mouse_yOffset = w.mouse_yOffset;
-	mouse_scrollXOffset = w.mouse_scrollXOffset;
-	mouse_scrollYOffset = w.mouse_scrollYOffset;
-
 }//====================================================
 
 }// End of gui namespace

@@ -46,10 +46,29 @@ namespace gui{
 // Declare the global extern variable
 App* GLOBAL_APP = nullptr;
 
+
+//-----------------------------------------------------
+//      *structors
+//-----------------------------------------------------
+
+/**
+ *  @brief Construct a default App
+ */
 App::App(){
 	GLOBAL_APP = this;
 }//====================================================
 
+/**
+ *  @brief Copy constructor; create an app that is a replica of <tt>a</tt>
+ *  @param a An App reference
+ */
+App::App(const App& a){
+	copyMe(a);
+}//====================================================
+
+/**
+ *  @brief Destruct the app and free any allocated resources
+ */
 App::~App(){
 	for(auto& window : windows){
 		delete window;
@@ -59,6 +78,30 @@ App::~App(){
 	glfwTerminate();
 }//====================================================
 
+//-----------------------------------------------------
+//      Operator Functions
+//-----------------------------------------------------
+
+/**
+ *  @brief Set this App equal to another
+ * 
+ *  @param a An App reference
+ *  @return A reference to this App
+ */
+App& App::operator =(const App& a){
+	copyMe(a);
+	return *this;
+}//====================================================
+
+//-----------------------------------------------------
+//      Event Loop Functions
+//-----------------------------------------------------
+
+/**
+ *  @brief Initialize the application
+ *  @details This function inits GLFW and creates the resource manager.
+ *  It must be called before any windows or other objects can be created
+ */
 void App::init(){
 	glfwSetErrorCallback(GLFWErrorCallback);
 
@@ -80,6 +123,14 @@ void App::init(){
 	resourceMan = std::shared_ptr<ResourceManager>(new ResourceManager());
 }//====================================================
 
+/**
+ *  @brief Run the application loop
+ *  @details This function must be called after all initializations are complete. Note that
+ *  A window MUST be created before this function is called to initialized GLEW. This is required
+ *  so that the default ImGui shaders and textures can be loaded.
+ *  
+ *  This function will loop infinitely until the application is told to quit.
+ */
 void App::run(){
 	// A window must be created (to initialize GLEW) before shaders and textures can be compiled
 	resourceMan->loadShader("../shaders/imgui.vs", "../shaders/imgui.frag", nullptr, "imgui");
@@ -124,7 +175,7 @@ void App::run(){
 
 			window->render();
 
-			glfwSwapBuffers(window->getWindowPtr());
+			glfwSwapBuffers(window->getGLFWWindowPtr());
 		}
 	}
 	
@@ -134,18 +185,51 @@ void App::run(){
 
 }//====================================================
 
+
+//-----------------------------------------------------
+//      Set and Get Fucntions
+//-----------------------------------------------------
+
+/**
+ *  @brief Retrieve a pointer to the main application window.
+ *  @return a pointer to the main application window.
+ */
 Window* App::getMainWindow() const{ return mainWindow; }
 
+/**
+ *  @brief Retrieve a shared pointer to the application resource manager
+ *  @return a shared pointer to the application resource manager
+ */
 std::shared_ptr<ResourceManager> App::getResMan() const { return resourceMan; }
 
+/**
+ *  @brief Set the main window. If this window is closed, the application will quit
+ *  @param pWin A pointer to the window object
+ */
 void App::setMainWindow(Window* pWin){ mainWindow = pWin; }
 
+
+//-----------------------------------------------------
+//      Utility Functions
+//-----------------------------------------------------
+
+/**
+ *  @brief Create a window and add it to the application
+ *  @details 
+ * 
+ *  @param width Width of the window, pixels
+ *  @param height Height of the window, pixels
+ *  @param title Title string that will display on the window decoration
+ *  @param pMonitor Pointer to the monitor object to create the window on; set to nullptr to skip this option
+ *  @param share Pointer to a window to share resources with; This should be used in general to avoid duplicating
+ *  shaders, textures, and other resources. Set <tt>share</tt> to the main window pointer for all secondary 
+ *  windows
+ *  @return A pointer to the window that has been created. If window creation fails, nullptr is returned
+ */
 Window* App::createWindow(int width, int height, const char* title, GLFWmonitor* pMonitor, Window* share){
     Window* prevContext = currentWindow;
 
     Window* window = new DemoWindow(width, height);
-
-    window->setID(nextWinID++);
 
     try{
     	window->create(title, pMonitor, share);
@@ -157,20 +241,12 @@ Window* App::createWindow(int width, int height, const char* title, GLFWmonitor*
 	makeContextCurrent(window);    
 	
 	// Save the user pointer so we can retrieve the "owner" of the GLFW window
-	glfwSetWindowUserPointer(window->getWindowPtr(), window);
+	glfwSetWindowUserPointer(window->getGLFWWindowPtr(), window);
 
     // Set any OpenGL options
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
 
     checkForGLErrors("OpenGL Options Error");
-    
-    // Setup callbacks
- //    glfwSetKeyCallback(window->getWindowPtr(), keyEventCallback);
-	// glfwSetCursorPosCallback(window->getWindowPtr(), mouseMoveCallback);
-	// glfwSetScrollCallback(window->getWindowPtr(), mouseScrollCallback);
-	// glfwSetMouseButtonCallback(window->getWindowPtr(), mouseButtonCallback);
-	// glfwSetCharCallback(window->getWindowPtr(), charCallback);
 
     // add new window to the list
     windows.push_back(window);
@@ -181,15 +257,39 @@ Window* App::createWindow(int width, int height, const char* title, GLFWmonitor*
     return window;
 }//====================================================
 
+/**
+ *  @brief Set the parameters of this app to be identical to those of the
+ *  input app reference
+ * 
+ *  @param a An App reference
+ */
+void App::copyMe(const App& a){
+	mainWindow = a.mainWindow;
+	currentWindow = a.currentWindow;
+	resourceMan = a.resourceMan;
+	windows = a.windows;
+}//====================================================
+
+/**
+ *  @brief Set the window to be the current, focussed window
+ *  @param pWin Pointer to the window to make the current context
+ */
 void App::makeContextCurrent(Window* pWin){
 	if(pWin){
-		glfwMakeContextCurrent(pWin->getWindowPtr());
+		glfwMakeContextCurrent(pWin->getGLFWWindowPtr());
 		currentWindow = pWin;
 	}else{
 		std::cout << "makeContextCurrent: Invalid window pointer!" << std::endl;
 	}
 }//====================================================
 
+/**
+ *  @brief Determine whether or not the application should quit.
+ *  @details This function should be called once per frame. Windows that have been closed 
+ *  will be deleted and removed from the relevant lists. If all windows are closed, or the main
+ *  window is closed, a value of TRUE is returned.
+ *  @return whether or not the application should quit.
+ */
 bool App::shouldClose(){
 	if(windows.empty())
 		return true;
@@ -198,7 +298,7 @@ bool App::shouldClose(){
 
 	std::list<Window*> winToDelete;
 	for(const auto& win : windows){
-		if(glfwWindowShouldClose(win->getWindowPtr())){
+		if(glfwWindowShouldClose(win->getGLFWWindowPtr())){
 			winToDelete.push_back(win);
 
 			if(GLOBAL_APP->getMainWindow() == win)
@@ -218,5 +318,10 @@ bool App::shouldClose(){
 
 	return windows.empty();
 }//====================================================
+
+
+
+
+
 }	// END of gui namespace
 }	// END of astrohelion namespace
