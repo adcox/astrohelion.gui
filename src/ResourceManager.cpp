@@ -23,7 +23,7 @@ ResourceManager::ResourceManager(){
 }//====================================================
 
 ResourceManager::~ResourceManager(){
-    std::cout << "ResourceManager::~ResourceManager" << std::endl;
+    // std::cout << "ResourceManager::~ResourceManager" << std::endl;
     clear();
 }//====================================================
 
@@ -93,7 +93,7 @@ Texture2D& ResourceManager::getTexture(std::string name){
  *  @brief Properly deallocates all loaded resources
  */
 void ResourceManager::clear(){
-    std::cout << "ResourceManager::clear" << std::endl;
+    // std::cout << "ResourceManager::clear" << std::endl;
     // (Properly) delete all shaders	
     for (auto iter : shaders)
         glDeleteProgram(iter.second.getID());

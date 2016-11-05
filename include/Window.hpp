@@ -23,7 +23,7 @@
 #include "GL/glew.h"	// This header must be included BEFORE glfw3
 #include "GLFW/glfw3.h"
 
-#include "ResourceUser.hpp"
+#include <string>
 
 namespace astrohelion{
 namespace gui{
@@ -40,7 +40,7 @@ namespace gui{
  * 	@copyright GNU GPL v3.0
  */
 
-class Window : public ResourceUser{
+class Window{
 public:
 	// *structors
 	Window();

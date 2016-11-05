@@ -30,8 +30,8 @@
 #include <stdexcept>
 #include <iostream>
 
-#include "imgui/imgui.h"
-#include "imgui/imgui_internal.h"
+#include <imgui/imgui.h>
+#include <imgui/imgui_internal.h>
 
 #ifdef _WIN32
 	#undef APIENTRY
@@ -40,7 +40,11 @@
 	#include <GLFW/glfw3native.h>
 #endif
 
+#include <glm/glm.hpp>
+
 #include "App.hpp"
+#include "ResourceManager.hpp"
+#include "Shader.hpp"
 #include "Window.hpp"
 
 namespace astrohelion{
@@ -218,11 +222,11 @@ void Window::ImGui_createDeviceObjects(){
     glGenBuffers(1, &imgui_VBO);
     glGenBuffers(1, &imgui_EBO);
 
-    if(!appRM){
+    if(!GLOBAL_APP->getResMan()){
         throw std::runtime_error("DemoWindow::init: Resource Manager has not been loaded; cannot init window");
     }
 
-    unsigned int shaderID = appRM->getShader("imgui").getID();
+    unsigned int shaderID = GLOBAL_APP->getResMan()->getShader("imgui").getID();
     unsigned int g_AttribLocationPosition = glGetAttribLocation(shaderID, "Position");
     unsigned int g_AttribLocationUV = glGetAttribLocation(shaderID, "UV");
     unsigned int g_AttribLocationColor = glGetAttribLocation(shaderID, "Color");
@@ -240,7 +244,7 @@ void Window::ImGui_createDeviceObjects(){
     glVertexAttribPointer(g_AttribLocationColor, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(ImDrawVert), (GLvoid*)OFFSETOF(ImDrawVert, col));
 #undef OFFSETOF
 
-    ImGui::GetIO().Fonts->TexID = (void *)(intptr_t)(appRM->getTexture("imguiFont").id);
+    ImGui::GetIO().Fonts->TexID = (void *)(intptr_t)(GLOBAL_APP->getResMan()->getTexture("imguiFont").id);
 
     // Restore modified GL state
     glBindTexture(GL_TEXTURE_2D, last_texture);
@@ -521,8 +525,6 @@ GLFWwindow* Window::getGLFWWindowPtr(){ return pWindow; }
  *  @param w Reference to another window
  */
 void Window::copyMe(const Window &w){
-	ResourceUser::copyMe(w);
-
 	pWindow = w.pWindow;
 	title = w.title;
 
@@ -564,7 +566,7 @@ void Window::copyMe(const Window &w){
  *  @param draw_data ImGui passes in data here to be drawn
  */
 void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
-    if(!appRM)
+    if(!GLOBAL_APP->getResMan())
         throw std::runtime_error("Window::ImGui_RenderDrawLists: Must initialize Resource Manager object before calling this function!");
 
     // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
@@ -612,7 +614,7 @@ void Window::ImGui_RenderDrawLists(ImDrawData* draw_data){
     ortho[3][0] = -1.0f;
     ortho[3][1] = 1.0f;
 
-    Shader &shade = appRM->getShader("imgui");
+    Shader &shade = GLOBAL_APP->getResMan()->getShader("imgui");
     
     shade.setInteger("Texture", 0, true);   // true: use this shader
     shade.setMatrix4("ProjMtx", ortho);

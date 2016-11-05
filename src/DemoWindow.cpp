@@ -31,6 +31,10 @@
 
 #include <cstdio>
 
+#include "App.hpp"
+#include "GLErrorHandling.hpp"
+#include "ResourceManager.hpp"
+
 namespace astrohelion{
 namespace gui{
 
@@ -46,12 +50,13 @@ DemoWindow::~DemoWindow(){
 		glDeleteVertexArrays(1, &VAO);
     	glDeleteBuffers(1, &VBO);
 	}
+    checkForGLErrors("DemoWindow::~DemoWindow()");
 }//====================================================
 
 void DemoWindow::init(){
     Window::init();
 
-    if(!appRM){
+    if(!GLOBAL_APP->getResMan()){
         throw std::runtime_error("DemoWindow::init: Resource Manager has not been loaded; cannot init window");
     }
 
@@ -74,7 +79,18 @@ void DemoWindow::init(){
 
     glBindVertexArray(0); // Unbind VAO
 
+    std::vector<float> points = {
+        -0.5, -0.5, 0,
+        -0.5,  0.5, 0,
+         0.5,  0.5, 0,
+         0.5, -0.5, 0,
+        -0.5, -0.5, 0
+    };
+
+    line.createFromPoints(points);
+    
     camera = CameraFPS(glm::vec3(0.0f, 0.0f, 3.f));
+    checkForGLErrors("DemoWindow::init()");
 }//====================================================
 
 void DemoWindow::update(){
@@ -96,8 +112,13 @@ void DemoWindow::update(){
     glm::mat4 projection;
     projection = glm::perspective(camera.getZoom(), (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
     
-    appRM->getShader("cube").setMatrix4("view", view);
-    appRM->getShader("cube").setMatrix4("projection", projection);
+    GLOBAL_APP->getResMan()->getShader("cube").setMatrix4("view", view, true);
+    GLOBAL_APP->getResMan()->getShader("cube").setMatrix4("projection", projection);
+
+    GLOBAL_APP->getResMan()->getShader("line_thick").setMatrix4("modelViewProjectionMatrix", projection*view, true);
+    GLOBAL_APP->getResMan()->getShader("line_thick").setVector2f("viewportSize", width, height);
+
+    checkForGLErrors("DemoWindow::update()");
 }//====================================================
 
 void DemoWindow::draw(){
@@ -131,30 +152,33 @@ void DemoWindow::draw(){
     }
 
 
-    // Draw the Cube
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glActiveTexture(GL_TEXTURE0);
-    appRM->getTexture("container").bind();
-    appRM->getShader("cube").setInteger("ourTexture1", 0);
-    appRM->getShader("cube").use();
+    // Draw the Cubes
+ //    glEnable(GL_DEPTH_TEST);
+ //    glDisable(GL_CULL_FACE);
+ //    glActiveTexture(GL_TEXTURE0);
+ //    GLOBAL_APP->getResMan()->getTexture("container").bind();
+ //    GLOBAL_APP->getResMan()->getShader("cube").setInteger("ourTexture1", 0, true);
 
-    glBindVertexArray(VAO);
-    for(GLuint i = 0; i < 10; i++){
-        glm::mat4 model;
-        model = glm::translate(model, cubePositions[i]);
-        GLfloat angle = glm::radians(20.0f)*i;
+ //    glBindVertexArray(VAO);
+ //    for(GLuint i = 0; i < 10; i++){
+ //        glm::mat4 model;
+ //        model = glm::translate(model, cubePositions[i]);
+ //        GLfloat angle = glm::radians(20.0f)*i;
         
-        if(i%3 == 0)
-            angle *= glfwGetTime();
+ //        if(i%3 == 0)
+ //            angle *= glfwGetTime();
 
-        model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
-        appRM->getShader("cube").setMatrix4("model", model);
+ //        model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+ //        GLOBAL_APP->getResMan()->getShader("cube").setMatrix4("model", model);
 
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-	glBindVertexArray(0);
-    // glBindTexture(GL_TEXTURE_2D, 0);
+ //        glDrawArrays(GL_TRIANGLES, 0, 36);
+ //    }
+	// glBindVertexArray(0);
+ //    glBindTexture(GL_TEXTURE_2D, 0);
+
+    line.draw();
+
+    checkForGLErrors("DemoWindow::draw()");
 }//====================================================
 
 void DemoWindow::handleMouseMoveEvent(double xpos, double ypos){

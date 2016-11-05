@@ -37,6 +37,8 @@
 #include <iostream>
 #include <string>
 
+#include "App.hpp"
+#include "ResourceManager.hpp"
 
 namespace astrohelion{
 namespace gui{
@@ -56,9 +58,8 @@ Font::Font(){
  *  @brief Construct a font in a given window
  *  @param pWindow pointer to the GLFW window
  */
-Font::Font(GLFWwindow *pWindow, std::shared_ptr<ResourceManager> rm){
+Font::Font(GLFWwindow *pWindow){
 	glfwGetWindowSize(pWindow, &viewW, &viewH);
-	appRM = rm;
 
 	init();
 }//====================================================
@@ -76,8 +77,8 @@ Font::Font(const Font &fm){
  *  @brief Initialize the font, no dependence on font face or size here
  */
 void Font::init(){
-	if(appRM){
-		appRM->loadShader("../shaders/text.vs", "../shaders/text.frag", nullptr, "font");
+	if(GLOBAL_APP->getResMan()){
+		GLOBAL_APP->getResMan()->loadShader("../shaders/text.vs", "../shaders/text.frag", nullptr, "font");
 	}
 
 	initProjection();
@@ -136,10 +137,10 @@ void Font::updateWindow(GLFWwindow *pWindow){
  *  the font glyphs in an orthorgraphic projection on screen
  */
 void Font::initProjection(){
-	if(appRM){
+	if(GLOBAL_APP->getResMan()){
 		// Compute the projection matrix and setup the shader to use it
 		glm::mat4 projection = glm::ortho(0.0f, static_cast<GLfloat>(viewW), 0.0f, static_cast<GLfloat>(viewH));
-		appRM->getShader("font").setMatrix4("projection", projection, true);
+		GLOBAL_APP->getResMan()->getShader("font").setMatrix4("projection", projection, true);
 	}
 }//====================================================
 
@@ -249,8 +250,8 @@ void Font::renderText(std::string str, GLfloat x, GLfloat y, GLfloat scale, glm:
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	// Activate the corresponding render state
-	if(appRM){
-		appRM->getShader("font").setVector3f("textColor", color.x, color.y, color.z, true);
+	if(GLOBAL_APP->getResMan()){
+		GLOBAL_APP->getResMan()->getShader("font").setVector3f("textColor", color.x, color.y, color.z, true);
 	}
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(VAO);
@@ -302,7 +303,6 @@ void Font::renderText(std::string str, GLfloat x, GLfloat y, GLfloat scale, glm:
  *  @param fm Reference to another font object
  */
 void Font::copyMe(const Font &fm){
-	ResourceUser::copyMe(fm);
 	VAO = fm.VAO;
 	VBO = fm.VBO;
 	viewW = fm.viewW;

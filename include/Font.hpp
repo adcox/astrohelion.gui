@@ -28,8 +28,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-#include "ResourceUser.hpp"
-
 #include <map>
 
 namespace astrohelion{
@@ -51,11 +49,11 @@ struct FontChar{
  *	@version September 22, 2016
  *	@copyright GNU GPL v3.0
  */
-class Font : public ResourceUser{
+class Font{
 
 public:
 	Font();
-	Font(GLFWwindow*, std::shared_ptr<ResourceManager>);
+	Font(GLFWwindow*);
 	Font(const Font&);
 
 	const Font& operator =(const Font&);

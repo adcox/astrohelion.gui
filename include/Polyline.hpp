@@ -1,11 +1,13 @@
+/**
+ *  @file Polyline.hpp
+ *	@brief A demo window with some objects to test out functionaltiy
+ *
+ *	@author Andrew Cox
+ *	@version September 24, 2016
+ *	@copyright GNU GPL v3.0
+ */
+ 
 /*
- *	@file GLErrorHandling.hpp
- *	@brief 
- * 	
- * 	@author Andrew Cox
- * 	@version Sep 19, 2016
- * 	@copyright GNU GPL v3.0
- *	
  *	Astrohelion 
  *	Copyright 2016, Andrew Cox; Protected under the GNU GPL v3.0
  *	
@@ -27,16 +29,37 @@
 
 #pragma once
 
-#include "GL/glew.h"		// This header must be included BEFORE glfw3
-#include <string>
+#include <vector>
 
 namespace astrohelion{
 namespace gui{
 
-// Function Declarations
-void GLFWErrorCallback(int, const char*);
-std::string glErrStr(GLenum);
-void checkForGLErrors(const char*);
+class Polyline{
+public:
+	Polyline();
+	Polyline(std::vector<float>);
 
-}	// END of gui namespace
-}	// END of astrohelion namespace
+	void createFromPoints(std::vector<float>);
+
+	void draw();
+
+	void setColor(float, float, float, float);
+	void setThickness(float);
+protected:
+
+	std::vector<float> points {};
+	std::vector<float> vertices {};
+	std::vector<unsigned int> indices {};
+
+	float thickness = 7.f;
+	float miterLimit = 0.75f;
+
+	float color[4] = {0.9, 0.9, 0.9, 1.0};
+
+	unsigned int VAO = 0;
+	unsigned int VBO = 0;
+	unsigned int EBO = 0;
+};
+
+}	// End of astrohelion namespace
+}	// End of gui namespace

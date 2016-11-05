@@ -1,116 +1,44 @@
 /**
- *  @brief First tutorial
- *  @details Dependencies for this project include:
- *  
- *  * GLFW
- *  * GLEW
- *  * SOIL - https://github.com/smibarber/libSOIL
- *  * ImGui
- *
- *  Resources consulted to create this file:
- *  
- *  * http://learnopengl.com/#!Getting-started/Creating-a-window
+ * Test the architecture / structure of my OpenGL setup
  */
+
 #include <iostream>
-#include <memory>
 #include <stdexcept>
 
+#include "App.hpp"
 #include "DemoWindow.hpp"
 #include "ResourceManager.hpp"
-
-#include "GL/glew.h"	// This header must be included BEFORE glfw3
-#include "GLFW/glfw3.h"
-
-#include "imgui/imgui_impl_glfw_gl3.h"
+#include "Window.hpp"
 
 namespace astroGui = astrohelion::gui;
+using namespace astroGui;
 
-astroGui::DemoWindow window;
-
-void keyEventCallback(GLFWwindow*, int, int, int, int);
-void mouseMoveCallback(GLFWwindow*, double, double);
-void mouseScrollCallback(GLFWwindow*, double, double);
-void mouseButtonCallback(GLFWwindow*, int, int, int);
-void charCallback(GLFWwindow*, unsigned int);
+App app;
 
 int main(){
-	if(glfwInit()){
-		glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);					// OpenGL major version 3
-	    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);					// OpenGL minor version 3 -> version 3.3
-	    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	    // glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-	   	
-#if __APPLE__
-	    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);			// Required on OS X
-#endif
 
-	    // Make a window
-	    // std::shared_ptr<Window> win = std::make_shared<DemoWindow>();
-    	// windows.push_back(win);
+	app.init();
+
+	// Create Windows
+	Window* win1 = new DemoWindow(500, 500);
+	if(app.addWindow(win1, "Window 1")){
+		app.setMainWindow(win1);
 	}else{
-		throw std::runtime_error("Application: Failed to initialize glfw");
+		win1 = nullptr;
 	}
 
-	window.create();
+	// Create a window and share resources with win1
+	// If resources are not shared, then we need to load default resources for each
+	// and every window that is created; how to do this without overwriting names
+	// for textures and shaders could be a challenge.
+	app.addWindow(new DemoWindow(500, 500), "Window 2", nullptr, win1);
 
-	std::shared_ptr<astroGui::ResourceManager> resourceManager(new astroGui::ResourceManager());
-	resourceManager->loadShader("../shaders/texture3D.vs", "../shaders/textured.frag", nullptr, "cube");
-	resourceManager->loadTexture("../textures/container.jpg", false, "container");
+	// Load some textures and shaders for the demo windwos
+	app.getResMan()->loadShader("../shaders/texture3D.vs", "../shaders/textured.frag", nullptr, "cube");
+	app.getResMan()->loadTexture("../textures/container.jpg", false, "container");
 
-	window.setResourceManager(resourceManager);
 
-	if(window.getWindowPtr()){
-		// Set any callback functions
-    	glfwSetKeyCallback(window.getWindowPtr(), keyEventCallback);
-    	glfwSetCursorPosCallback(window.getWindowPtr(), mouseMoveCallback);
-    	glfwSetScrollCallback(window.getWindowPtr(), mouseScrollCallback);
-    	glfwSetMouseButtonCallback(window.getWindowPtr(), mouseButtonCallback);
-    	glfwSetCharCallback(window.getWindowPtr(), charCallback);
-
-		window.init();
-
-		while(!glfwWindowShouldClose(window.getWindowPtr())){
-			glfwPollEvents();
-			window.computeMetrics();
-
-			window.update();
-
-			glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			window.draw();
-
-			glfwSwapBuffers(window.getWindowPtr());	
-		}
-	}
-	
-	resourceManager->clear();
-	glfwTerminate();
+	app.run();
 
 	return EXIT_SUCCESS;
-}//====================================================
-
-void keyEventCallback(GLFWwindow* pWindow, int key, int scancode, int action, int mods){
-	// TODO - For multiple windows, will need to detect window from the pointer -> use a map?
-	window.handleKeyEvent(key, scancode, action, mods);
-	ImGui_ImplGlfwGL3_KeyCallback(pWindow, key, scancode, action, mods);
-}//====================================================
-
-void mouseMoveCallback(GLFWwindow* pWindow, double xpos, double ypos){
-	// TODO - For multiple windows, will need to detect window from the pointer -> use a map?
-	window.handleMouseMoveEvent(xpos, ypos);
-}//====================================================
-
-void mouseScrollCallback(GLFWwindow* pWindow, double xoffset, double yoffset){
-	// TODO - For multiple windows, will need to detect window from the pointer -> use a map?
-	window.handleMouseScrollEvent(xoffset, yoffset);
-	ImGui_ImplGlfwGL3_ScrollCallback(pWindow, xoffset, yoffset);
-}//====================================================
-
-void mouseButtonCallback(GLFWwindow* pWindow, int button, int action, int mods){
-	ImGui_ImplGlfwGL3_MouseButtonCallback(pWindow, button, action, mods);
-}//====================================================
-
-void charCallback(GLFWwindow* pWindow, unsigned int c){
-	ImGui_ImplGlfwGL3_CharCallback(pWindow, c);
 }//====================================================

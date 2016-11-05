@@ -91,9 +91,6 @@ all:
 arch: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) structureTest.cpp -o $(BIN)/$@
 
-arch2: $(OBJECTS)
-	$(COMP) $(INCLUDES) $^ $(LDFLAGS) structureTest2.cpp -o $(BIN)/$@
-
 coord: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) coordTutorial.cpp -o $(BIN)/$@
 
@@ -105,6 +102,9 @@ font: $(OBJECTS)
 
 texture: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) textureTutorial.cpp -o $(BIN)/$@
+
+thickLines: $(OBJECTS)
+	$(COMP) $(INCLUDES) $^ $(LDFLAGS) thickLines.cpp -o $(BIN)/$@
 
 multiWindow: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) multiWindowTest.cpp -o $(BIN)/$@

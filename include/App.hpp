@@ -46,7 +46,7 @@ public:
 
 	App& operator =(const App&);
 
-	Window* createWindow(int width, int height, const char* title, GLFWmonitor* pMonitor = nullptr, Window* share = nullptr);
+	bool addWindow(Window* pWindow, const char* title, GLFWmonitor* pMonitor = nullptr, Window* share = nullptr);
 	void makeContextCurrent(Window*);
 
 	Window* getMainWindow() const;

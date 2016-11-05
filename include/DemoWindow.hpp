@@ -1,5 +1,5 @@
 /**
- *  @file Demo Window
+ *  @file DemoWindow.hpp
  *	@brief A demo window with some objects to test out functionaltiy
  *
  *	@author Andrew Cox
@@ -28,17 +28,18 @@
  */
 
 #pragma once
-#include "SOIL/SOIL.h"
 
-#include "Window.hpp"
-
-#include "CameraFPS.hpp"
+// #include <SOIL/SOIL.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include "glm/gtc/type_ptr.hpp"
 
 #include <imgui/imgui.h>
+
+#include "CameraFPS.hpp"
+#include "Polyline.hpp"
+#include "Window.hpp"
 
 namespace astrohelion{
 namespace gui{
@@ -113,6 +114,8 @@ protected:
       glm::vec3( 1.5f,  0.2f, -1.5f), 
       glm::vec3(-1.3f,  1.0f, -1.5f)  
     };
+
+    Polyline line;
 
     float imgui_sliderVal = 0.0f;
     bool imgui_showTestWindow = false;

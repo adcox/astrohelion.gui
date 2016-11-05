@@ -122,6 +122,7 @@ int main(){
         // 5. Draw the object
         glBindVertexArray(VAO);
     	glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_LINE_LOOP, 0, 3);
     	glBindVertexArray(0);
     	glfwSwapBuffers(window);	// swap the front and back buffers for smooth rendering
     }

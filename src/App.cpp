@@ -134,7 +134,9 @@ void App::init(){
 void App::run(){
 	// A window must be created (to initialize GLEW) before shaders and textures can be compiled
 	resourceMan->loadShader("../shaders/imgui.vs", "../shaders/imgui.frag", nullptr, "imgui");
-	
+	resourceMan->loadShader("../shaders/line_thick.vs", "../shaders/line_thick.frag",
+		"../shaders/line_thick.geom", "line_thick");
+
 	// Create a texture for ImGui Font
 	Texture2D tempTex;
 	ImGuiIO& io = ImGui::GetIO();
@@ -155,7 +157,6 @@ void App::run(){
 			setMainWindow(window);
 
 		makeContextCurrent(window);
-		window->setResourceManager(resourceMan);
 		window->init();
 
 		glClearColor(0.15f, 0.15f, 0.15f, 1.0f);
@@ -214,47 +215,44 @@ void App::setMainWindow(Window* pWin){ mainWindow = pWin; }
 //-----------------------------------------------------
 
 /**
- *  @brief Create a window and add it to the application
- *  @details 
+ *  @brief Add a window to the application
+ *  @details The window should be allocated to the stack via <tt>new</tt>. The
+ *  App object will delete the window once it is closed. Take care to avoid
+ *  dereferencing a window pointer once the window has been closed
  * 
- *  @param width Width of the window, pixels
- *  @param height Height of the window, pixels
  *  @param title Title string that will display on the window decoration
  *  @param pMonitor Pointer to the monitor object to create the window on; set to nullptr to skip this option
  *  @param share Pointer to a window to share resources with; This should be used in general to avoid duplicating
  *  shaders, textures, and other resources. Set <tt>share</tt> to the main window pointer for all secondary 
  *  windows
- *  @return A pointer to the window that has been created. If window creation fails, nullptr is returned
+ *  @return True if window creation is successful, false otherwise
  */
-Window* App::createWindow(int width, int height, const char* title, GLFWmonitor* pMonitor, Window* share){
-    Window* prevContext = currentWindow;
+bool App::addWindow(Window* pWindow, const char* title, GLFWmonitor *pMonitor, Window* share){
+	Window* prevContext = currentWindow;
 
-    Window* window = new DemoWindow(width, height);
-
-    try{
-    	window->create(title, pMonitor, share);
+	try{
+    	pWindow->create(title, pMonitor, share);
     }catch(std::runtime_error &e){
-    	delete window;
-    	return nullptr;
+    	delete pWindow;
+    	return false;
     }
 
-	makeContextCurrent(window);    
+	makeContextCurrent(pWindow);    
 	
 	// Save the user pointer so we can retrieve the "owner" of the GLFW window
-	glfwSetWindowUserPointer(window->getGLFWWindowPtr(), window);
+	glfwSetWindowUserPointer(pWindow->getGLFWWindowPtr(), pWindow);
 
     // Set any OpenGL options
     glEnable(GL_DEPTH_TEST);
 
-    checkForGLErrors("OpenGL Options Error");
+    checkForGLErrors("App::addWindow() OpenGL Options Error");
 
     // add new window to the list
-    windows.push_back(window);
+    windows.push_back(pWindow);
 
     // Restore previous context
     makeContextCurrent(prevContext);
-
-    return window;
+    return true;
 }//====================================================
 
 /**
