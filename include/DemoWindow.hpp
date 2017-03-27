@@ -57,7 +57,7 @@ public:
 
     void handleMouseMoveEvent(double, double) override;
 protected:
-	// Create an cube
+	// Create a cube
     GLfloat vertices[180] = {
         -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
          0.5f, -0.5f, -0.5f,  1.0f, 0.0f,

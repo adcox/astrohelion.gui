@@ -57,7 +57,7 @@ void Polyline::createFromPoints(std::vector<float> pts){
 
 	this->points = pts;
 	size_t n = pts.size()/3;
-	printf("Polyline has %zu points\n", n);
+	// printf("Polyline has %zu points\n", n);
 
 	vertices.clear();
 	indices.clear();
@@ -110,25 +110,25 @@ void Polyline::createFromPoints(std::vector<float> pts){
 	vertices.push_back(color[2]);
 	vertices.push_back(color[3]);
 
-	printf("Points:\n");
-	for(unsigned int i = 0; i < vertices.size(); i++){
-		printf("%5.2f", vertices[i]);
+	// printf("Points:\n");
+	// for(unsigned int i = 0; i < vertices.size(); i++){
+	// 	printf("%5.2f", vertices[i]);
 
-		if(i!= 0 && (i+1)%7 == 0)
-			printf("\n");
-		else
-			printf(", ");
-	}
+	// 	if(i!= 0 && (i+1)%7 == 0)
+	// 		printf("\n");
+	// 	else
+	// 		printf(", ");
+	// }
 
-	printf("\nIndices:\n");
-	for(unsigned int i = 0; i < indices.size(); i++){
-		printf("%u", indices[i]);
+	// printf("\nIndices:\n");
+	// for(unsigned int i = 0; i < indices.size(); i++){
+	// 	printf("%u", indices[i]);
 
-		if(i!= 0 && (i+1)%4 == 0)
-			printf("\n");
-		else
-			printf(", ");
-	}
+	// 	if(i!= 0 && (i+1)%4 == 0)
+	// 		printf("\n");
+	// 	else
+	// 		printf(", ");
+	// }
 
 	glGenVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);

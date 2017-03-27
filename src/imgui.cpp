@@ -2926,7 +2926,8 @@ void ImGui::RenderCollapseTriangle(ImVec2 p_min, bool is_open, float scale, bool
 void ImGui::RenderBullet(ImVec2 pos)
 {
     ImGuiWindow* window = GetCurrentWindow();
-    window->DrawList->AddCircleFilled(pos, GImGui->FontSize*0.20f, GetColorU32(ImGuiCol_Text), 8);
+    // window->DrawList->AddCircleFilled(pos, GImGui->FontSize*0.20f, GetColorU32(ImGuiCol_Text), 8);
+    window->DrawList->AddHexFilled(pos, GImGui->FontSize*0.20f, GetColorU32(ImGuiCol_Text));
 }
 
 void ImGui::RenderCheckMark(ImVec2 pos, ImU32 col)
@@ -5613,7 +5614,8 @@ bool ImGui::CloseButton(ImGuiID id, const ImVec2& pos, float radius)
     // Render
     const ImU32 col = GetColorU32((held && hovered) ? ImGuiCol_CloseButtonActive : hovered ? ImGuiCol_CloseButtonHovered : ImGuiCol_CloseButton);
     const ImVec2 center = bb.GetCenter();
-    window->DrawList->AddCircleFilled(center, ImMax(2.0f, radius), col, 12);
+    // window->DrawList->AddCircleFilled(center, ImMax(2.0f, radius), col, 12);
+    window->DrawList->AddHexFilled(center, ImMax(2.0f, radius), col);
 
     const float cross_extent = (radius * 0.7071f) - 1.0f;
     if (hovered)
@@ -7278,12 +7280,14 @@ bool ImGui::RadioButton(const char* label, bool active)
     bool hovered, held;
     bool pressed = ButtonBehavior(total_bb, id, &hovered, &held);
 
-    window->DrawList->AddCircleFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 16);
+    // window->DrawList->AddCircleFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg), 16);
+    window->DrawList->AddHexFilled(center, radius, GetColorU32((held && hovered) ? ImGuiCol_FrameBgActive : hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg));
     if (active)
     {
         const float check_sz = ImMin(check_bb.GetWidth(), check_bb.GetHeight());
         const float pad = ImMax(1.0f, (float)(int)(check_sz / 6.0f));
-        window->DrawList->AddCircleFilled(center, radius-pad, GetColorU32(ImGuiCol_CheckMark), 16);
+        // window->DrawList->AddCircleFilled(center, radius-pad, GetColorU32(ImGuiCol_CheckMark), 16);
+        window->DrawList->AddHexFilled(center, radius-pad, GetColorU32(ImGuiCol_CheckMark));
     }
 
     if (window->Flags & ImGuiWindowFlags_ShowBorders)

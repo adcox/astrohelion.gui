@@ -2,8 +2,6 @@
 
 uniform mat4 modelViewProjectionMatrix;
 
-// layout(location = 0) in vec4 Vertex;
-// layout(location = 1) in vec4 Color;
 layout(location = 0) in vec3 Vertex;
 layout(location = 1) in vec3 Color;
 

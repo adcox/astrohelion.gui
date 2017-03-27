@@ -96,13 +96,15 @@ void CameraFPS::processMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean
  */
 void CameraFPS::processMouseScroll(GLfloat yoffset){
     if (zoom >= 1.0f && zoom <= 45.0f)
-        zoom -= yoffset;
+        zoom -= yoffset*mouseScrollScale;
     
     if (zoom <= 1.0f)
         zoom = 1.0f;
     
     if (zoom >= 45.0f)
         zoom = 45.0f;
+
+    printf("Zoom = %.2f\n", zoom);
 }//====================================================
 
 //-----------------------------------------------------

@@ -373,7 +373,6 @@ void Window::postDraw(){
 
 /**
  *  @brief Call this function from the event loop to render this window
- *  @details [long description]
  */
 void Window::render(){
     preDraw();

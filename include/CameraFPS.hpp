@@ -75,13 +75,14 @@ protected:
     glm::vec3 right;        //!< The right direction from the camera's point of view, unit vector
     glm::vec3 worldUp;      //!< The up direction for the world, unit vector
     
-    // Eular Angles
+    // Euler Angles
     GLfloat yaw = -90.0f;       //!< Camera yaw angle, degrees
     GLfloat pitch = 0.0f;       //!< Camera pitch angle, degrees
 
     // Camera options
-    GLfloat moveSpeed = 3.0f;   //!< Camera movement speed, pixels per frame
+    GLfloat moveSpeed = 3.0f;           //!< Camera movement speed, pixels per frame
     GLfloat mouseSensitivity = 0.25f;   //!< Scale mouse movement speed
+    GLfloat mouseScrollScale = 0.075;   //!< Multiple scroll update by this value to adjust speed
     GLfloat zoom = 45.0f;       //!< Zoom level, corresponds to field of view, degrees
 
     void updateCameraVectors();

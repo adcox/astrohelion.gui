@@ -18,7 +18,7 @@
 # My headers
 INC := ../include
 # System headers; these are included to not throw warnings
-INC_SYS  := ../include_extern /opt/local/include
+INC_SYS  := ../include_extern /opt/local/include /usr/local/include/astrohelion_extern
 # Source files
 SRC := ../src
 # Destination directory for compiled objects; use one for optimized, second for debug versions
@@ -38,7 +38,7 @@ CFLAGS += -ggdb -W -Wall -Wextra -Weffc++ -pedantic
 
 # Library names and locations
 LDFLAGS += -L $(LIB)
-LIBS = glfw3 GLEW SOIL freetype
+LIBS = glfw3 GLEW SOIL freetype astrohelion
 LDFLAGS += $(foreach lib, $(LIBS),-l$(lib))
 
 # Options that are platform dependent
@@ -91,6 +91,9 @@ all:
 arch: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) structureTest.cpp -o $(BIN)/$@
 
+astrohelion: $(OBJECTS)
+	$(COMP) $(INCLUDES) $^ $(LDFLAGS) astrohelion.cpp -o $(BIN)/$@
+
 coord: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) coordTutorial.cpp -o $(BIN)/$@
 
@@ -100,14 +103,15 @@ firstTutorial: $(OBJECTS)
 font: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) fontTest.cpp -o $(BIN)/$@
 
+hex: $(OBJECTS)
+	$(COMP) $(INCLUDES) $^ $(LDFLAGS) drawHexagon.cpp -o $(BIN)/$@
+
 texture: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) textureTutorial.cpp -o $(BIN)/$@
 
 thickLines: $(OBJECTS)
 	$(COMP) $(INCLUDES) $^ $(LDFLAGS) thickLines.cpp -o $(BIN)/$@
 
-multiWindow: $(OBJECTS)
-	$(COMP) $(INCLUDES) $^ $(LDFLAGS) multiWindowTest.cpp -o $(BIN)/$@
 ############################################################
 ## OBJECTS - All the %.o files go in the OBJ directory
 ############################################################
@@ -135,8 +139,9 @@ printVars:
 list:
 	@- echo "You may choose from the following options:"
 	@- echo " arch - Test my custom classes and definitions, i.e., my custom OpenGL architecture"
+	@- echo " astrohelion - Test GUI with orbit design capabilities"
 	@- echo " firstTutorial - Test first several tutorial's worth of code"
+	@- echo " font - Test font stuff"
 	@- echo " texture - Test the texture tutorial code"
-
-
+	@- echo " thickLines - Test thick line drawing"
 

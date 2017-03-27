@@ -910,6 +910,32 @@ void ImDrawList::AddCircleFilled(const ImVec2& centre, float radius, ImU32 col, 
     PathFill(col);
 }
 
+void ImDrawList::AddHex(const ImVec2& centre, float radius, ImU32 col, float thickness){
+    if ((col >> 24) == 0)
+        return;
+
+    float theta = 0;
+    for(unsigned int i = 0; i < 6; i++){
+        ImVec2 point(centre.x + radius*cos(theta), centre.y + radius*sin(theta));
+        PathLineTo(point);
+        theta += IM_PI/3;
+    }
+    PathStroke(col, true, thickness);
+}
+
+void ImDrawList::AddHexFilled(const ImVec2& centre, float radius, ImU32 col){
+    if ((col >> 24) == 0)
+        return;
+
+    float theta = 0;
+    for(unsigned int i = 0; i < 6; i++){
+        ImVec2 point(centre.x + radius*cos(theta), centre.y + radius*sin(theta));
+        PathLineTo(point);
+        theta += IM_PI/3;
+    }
+    PathFill(col);
+}
+
 void ImDrawList::AddBezierCurve(const ImVec2& pos0, const ImVec2& cp0, const ImVec2& cp1, const ImVec2& pos1, ImU32 col, float thickness, int num_segments)
 {
     if ((col >> 24) == 0)

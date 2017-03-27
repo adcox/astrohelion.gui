@@ -27,7 +27,7 @@
  *  along with Astrohelion.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "DemoWindow.hpp"
+#include "MainWindow.hpp"
 
 #include <cstdio>
 
@@ -35,65 +35,62 @@
 #include "GLErrorHandling.hpp"
 #include "ResourceManager.hpp"
 
+// Includes for Astrohelion Demo
+#include "astrohelion/SysData_bc4bp.hpp"
+#include "astrohelion/Traj_bc4bp.hpp"
+
 namespace astrohelion{
 namespace gui{
 
 //-----------------------------------------------------
 //      *structors
 //-----------------------------------------------------
-DemoWindow::DemoWindow(){}
-DemoWindow::DemoWindow(int w, int h) : Window(w, h) {}
-DemoWindow::DemoWindow(int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share) : Window(w, h, title, pMonitor, share) {}
+MainWindow::MainWindow(){}
+MainWindow::MainWindow(int w, int h) : Window(w, h) {}
+MainWindow::MainWindow(int w, int h, const char* title, GLFWmonitor *pMonitor, Window* share) : Window(w, h, title, pMonitor, share) {}
 
-DemoWindow::~DemoWindow(){
+MainWindow::~MainWindow(){
 	if(pWindow){
 		glDeleteVertexArrays(1, &VAO);
     	glDeleteBuffers(1, &VBO);
 	}
-    checkForGLErrors("DemoWindow::~DemoWindow()");
+    checkForGLErrors("MainWindow::~MainWindow()");
 }//====================================================
 
-void DemoWindow::init(){
+void MainWindow::init(){
     Window::init();
 
     if(!GLOBAL_APP->getResMan()){
-        throw std::runtime_error("DemoWindow::init: Resource Manager has not been loaded; cannot init window");
+        throw std::runtime_error("MainWindow::init: Resource Manager has not been loaded; cannot init window");
     }
 
-    // Create a vertex array and a buffer to store the cube data
-    glGenVertexArrays(1, &VAO);
-    glGenBuffers(1, &VBO);
+    // Load the BC4BP system from the file
+    // SysData_bc4bp bcSys("../../Astrohelion_scripts/LPF/data/LPF_QH_4B_NaturalManifolds_flyby/Traj019_SEM.mat");
+    SysData_bc4bp bcSys("../data/se_dpo_sem.mat");
+    // Load the trajectory from the file
+    // Traj_bc4bp natArc("../../Astrohelion_scripts/LPF/data/LPF_QH_4B_NaturalManifolds_flyby/Traj019_SEM.mat", &bcSys);
+    Traj_bc4bp natArc("../data/se_dpo_sem.mat", &bcSys);
 
-    glBindVertexArray(VAO);
-
-    // Give the cube vertex data to the buffer
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    // Position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)0);
-    glEnableVertexAttribArray(0);
-    // TexCoord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat)));
-    glEnableVertexAttribArray(2);
-
-    glBindVertexArray(0); // Unbind VAO
-
-    std::vector<float> points = {
-        -0.5, -0.5, -2.0,
-        -0.5, 0.5, -1.0,
-        0.5, 0.5, 0,
-        0.5, -0.5, 1.0,
-        -0.5, -0.5, 2.0
-    };
+    std::vector<float> points;
+    points.reserve(natArc.getNumNodes()*3);
+    for(int i = 0; i < natArc.getNumNodes(); i++){
+        std::vector<double> state = natArc.getStateByIx(i);
+        
+        points.push_back(static_cast<float>(state[0]));
+        points.push_back(static_cast<float>(state[1]));
+        points.push_back(static_cast<float>(state[2]));
+    }
 
     line.createFromPoints(points);
+    line.setThickness(1);
     
+    hex.createShape();
+
     camera = CameraFPS(glm::vec3(0.0f, 0.0f, 3.f));
-    checkForGLErrors("DemoWindow::init()");
+    checkForGLErrors("MainWindow::init()");
 }//====================================================
 
-void DemoWindow::update(){
+void MainWindow::update(){
     Window::update();
 
 	if(bKeyPressed[GLFW_KEY_W])
@@ -111,17 +108,14 @@ void DemoWindow::update(){
 
     glm::mat4 projection;
     projection = glm::perspective(camera.getZoom(), (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
-    
-    GLOBAL_APP->getResMan()->getShader("cube").setMatrix4("view", view, true);
-    GLOBAL_APP->getResMan()->getShader("cube").setMatrix4("projection", projection);
 
     GLOBAL_APP->getResMan()->getShader("line_thick").setMatrix4("modelViewProjectionMatrix", projection*view, true);
     GLOBAL_APP->getResMan()->getShader("line_thick").setVector2f("viewportSize", width, height);
 
-    checkForGLErrors("DemoWindow::update()");
+    checkForGLErrors("MainWindow::update()");
 }//====================================================
 
-void DemoWindow::draw(){
+void MainWindow::draw(){
     Window::draw();
     
     // 1. Show a simple window
@@ -151,37 +145,12 @@ void DemoWindow::draw(){
         ImGui::ShowTestWindow(&imgui_showTestWindow);
     }
 
-
-    // Draw the Cubes
-    glEnable(GL_DEPTH_TEST);
-    glDisable(GL_CULL_FACE);
-    glActiveTexture(GL_TEXTURE0);
-    GLOBAL_APP->getResMan()->getTexture("container").bind();
-    GLOBAL_APP->getResMan()->getShader("cube").setInteger("ourTexture1", 0, true);
-
-    glBindVertexArray(VAO);
-    for(GLuint i = 0; i < 10; i++){
-        glm::mat4 model;
-        model = glm::translate(model, cubePositions[i]);
-        GLfloat angle = glm::radians(20.0f)*i;
-        
-        if(i%3 == 0)
-            angle *= glfwGetTime();
-
-        model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
-        GLOBAL_APP->getResMan()->getShader("cube").setMatrix4("model", model);
-
-        glDrawArrays(GL_TRIANGLES, 0, 36);
-    }
-	glBindVertexArray(0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    line.draw();
-
-    checkForGLErrors("DemoWindow::draw()");
+    // line.draw();
+    hex.draw();
+    checkForGLErrors("MainWindow::draw()");
 }//====================================================
 
-void DemoWindow::handleMouseMoveEvent(double xpos, double ypos){
+void MainWindow::handleMouseMoveEvent(double xpos, double ypos){
     Window::handleMouseMoveEvent(xpos, ypos);
 
     // camera.processMouseMovement(xpos, ypos);

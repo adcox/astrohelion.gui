@@ -136,7 +136,9 @@ void App::run(){
 	resourceMan->loadShader("../shaders/imgui.vs", "../shaders/imgui.frag", nullptr, "imgui");
 	resourceMan->loadShader("../shaders/line_thick.vs", "../shaders/line_thick.frag",
 		"../shaders/line_thick.geom", "line_thick");
-
+	resourceMan->loadShader("../shaders/textured.vs", "../shaders/textured.frag", nullptr, "textured");
+	resourceMan->loadShader("../shaders/colored.vs", "../shaders/colored.frag", nullptr, "colored");
+	resourceMan->loadShader("../shaders/basic.vert", "../shaders/basic.frag", nullptr, "basic");
 	// Create a texture for ImGui Font
 	Texture2D tempTex;
 	ImGuiIO& io = ImGui::GetIO();

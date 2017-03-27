@@ -15,7 +15,8 @@
 #include FT_FREETYPE_H
 // GL includes
 
-#include "Shader.hpp"
+#include "App.hpp"
+// #include "Shader.hpp"
 #include "Font.hpp"
 
 namespace AstroGui = astrohelion::gui;
@@ -26,13 +27,8 @@ const GLuint WIDTH = 800, HEIGHT = 600;
 // The MAIN function, from here we start our application and run the Game loop
 int main()
 {
-    // Init GLFW
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);            // Required on OS X
+    AstroGui::App app;  // Create an App to store global resource manager
+    app.init();         // initialize GLFW and GLEW 
 
     GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "LearnOpenGL", nullptr, nullptr); // Windowed
     glfwMakeContextCurrent(window);
