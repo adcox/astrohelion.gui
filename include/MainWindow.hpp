@@ -37,8 +37,8 @@
 
 #include <imgui/imgui.h>
 
+#include "BillboardSet.hpp"
 #include "CameraFPS.hpp"
-#include "Shape.hpp"
 #include "Polyline.hpp"
 #include "Window.hpp"
 
@@ -56,18 +56,20 @@ public:
 	void update() override;
 	void draw() override;
 
+    void handleMouseButtonEvent(int, int, int) override;
     void handleMouseMoveEvent(double, double) override;
+    void handleWindowSizeEvent(int, int) override;
+    
 protected:
 
     Polyline line;
-    Shape hex;
+    BillboardSet bill;
 
-    float imgui_sliderVal = 0.0f;
-    bool imgui_showTestWindow = false;
-	bool imgui_showAnotherWindow = false;
 	ImVec4 imgui_clearColor = ImColor(114, 144, 154);
 
     CameraFPS camera;
+
+    int cameraOptionRadio = 0;  // Tracks which radio button is selected
 
     GLuint VBO, VAO;
 };

@@ -16,20 +16,28 @@ out VertexData{
     vec4 mColor;
 } VertexOut;
 
-vec2 toScreenSpace(vec4 vertex)
-{
-return vec2( vertex.xy / vertex.w ) * viewportSize;
+/**
+ *  \brief Convert from normalized screen coordinates to
+ *  flat, pixel screen coordinates
+ *  \details Dividing by vertex.w ensures that the line size
+ *  does not change when the camera is zoomed (like a billboard)
+ * 
+ *  \param vertex A 4-d vertex vector (x, y, z, w)
+ *  \return a 2-d vertex position on the screen
+ */
+vec2 toScreenSpace(vec4 vertex){
+    return vec2( vertex.xy / vertex.w ) * viewportSize;
 }
 
 void main(void)
 {
-    // 4 points
+    // 4 points (world coordinates)
     vec4 P0 = gl_in[0].gl_Position;
     vec4 P1 = gl_in[1].gl_Position;
     vec4 P2 = gl_in[2].gl_Position;
     vec4 P3 = gl_in[3].gl_Position;
 
-    // get the four vertices passed to the shader:
+    // Convert world coordinates to screen coordinates and scale for the screen
     vec2 p0 = toScreenSpace( P0 );	// start of previous segment
     vec2 p1 = toScreenSpace( P1 );	// end of previous segment, start of current segment
     vec2 p2 = toScreenSpace( P2 );	// end of current segment, start of next segment

@@ -38,6 +38,7 @@
 // Includes for Astrohelion Demo
 #include "astrohelion/SysData_bc4bp.hpp"
 #include "astrohelion/Traj_bc4bp.hpp"
+#include "astrohelion/Utilities.hpp"
 
 namespace astrohelion{
 namespace gui{
@@ -63,15 +64,19 @@ void MainWindow::init(){
     if(!GLOBAL_APP->getResMan()){
         throw std::runtime_error("MainWindow::init: Resource Manager has not been loaded; cannot init window");
     }
+    GLOBAL_APP->getResMan()->loadShader("../shaders/billboard.vert", "../shaders/billboard.frag", "../shaders/hexagon.geom", "billboard");
 
     // Load the BC4BP system from the file
     // SysData_bc4bp bcSys("../../Astrohelion_scripts/LPF/data/LPF_QH_4B_NaturalManifolds_flyby/Traj019_SEM.mat");
-    SysData_bc4bp bcSys("../data/se_dpo_sem.mat");
+    SysData_bc4bp bcSys("../data/seDPO_37_sp_sem.mat");
     // Load the trajectory from the file
     // Traj_bc4bp natArc("../../Astrohelion_scripts/LPF/data/LPF_QH_4B_NaturalManifolds_flyby/Traj019_SEM.mat", &bcSys);
-    Traj_bc4bp natArc("../data/se_dpo_sem.mat", &bcSys);
+    Traj_bc4bp natArc("../data/seDPO_37_sp_sem.mat", &bcSys);
 
-    std::vector<float> points;
+    std::vector<float> points, endPts, endPtColors;
+    std::vector<float> red {1.f, 0.f, 0.f, 1.f};
+    std::vector<float> green {0.f, 1.f, 0.f, 1.f};
+
     points.reserve(natArc.getNumNodes()*3);
     for(int i = 0; i < natArc.getNumNodes(); i++){
         std::vector<double> state = natArc.getStateByIx(i);
@@ -79,14 +84,28 @@ void MainWindow::init(){
         points.push_back(static_cast<float>(state[0]));
         points.push_back(static_cast<float>(state[1]));
         points.push_back(static_cast<float>(state[2]));
+
+        if(i == 0 || i == natArc.getNumNodes()-1){
+            endPts.push_back(static_cast<float>(state[0]));
+            endPts.push_back(static_cast<float>(state[1]));
+            endPts.push_back(static_cast<float>(state[2])); 
+
+            if(i == 0)
+                endPtColors.insert(endPtColors.end(), green.begin(), green.end());
+            else
+                endPtColors.insert(endPtColors.end(), red.begin(), red.end());
+        }
     }
 
     line.createFromPoints(points);
-    line.setThickness(1);
+    line.setThickness(2);
     
-    hex.createShape();
+    bill = BillboardSet(endPts, endPtColors);
+    bill.init();
 
     camera = CameraFPS(glm::vec3(0.0f, 0.0f, 3.f));
+    camera.setScreenProperties(0,0, width, height);
+
     checkForGLErrors("MainWindow::init()");
 }//====================================================
 
@@ -104,13 +123,18 @@ void MainWindow::update(){
 
 	camera.processMouseScroll(mouse_scrollYOffset);
 
-	glm::mat4 view = camera.getViewMatrix();
 
-    glm::mat4 projection;
+	// view = camera.getViewMatrix();
+    camera.getViewMatrix(&view);
     projection = glm::perspective(camera.getZoom(), (GLfloat)width / (GLfloat)height, 0.1f, 1000.0f);
 
     GLOBAL_APP->getResMan()->getShader("line_thick").setMatrix4("modelViewProjectionMatrix", projection*view, true);
     GLOBAL_APP->getResMan()->getShader("line_thick").setVector2f("viewportSize", width, height);
+
+    GLOBAL_APP->getResMan()->getShader("billboard").setMatrix4("viewProj", projection*view, true);
+    GLOBAL_APP->getResMan()->getShader("billboard").setVector2f("offset", 0, 0);
+    GLOBAL_APP->getResMan()->getShader("billboard").setVector2f("viewportSize", width, height);
+    GLOBAL_APP->getResMan()->getShader("billboard").setFloat("radius", 20);
 
     checkForGLErrors("MainWindow::update()");
 }//====================================================
@@ -118,42 +142,69 @@ void MainWindow::update(){
 void MainWindow::draw(){
     Window::draw();
     
-    // 1. Show a simple window
-    // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-    {
-        ImGui::Text("Hello, world!");
-        ImGui::SliderFloat("float", &imgui_sliderVal, 0.0f, 1.0f);
-        ImGui::ColorEdit3("clear color", (float*)&imgui_clearColor);
-        if (ImGui::Button("Test Window")) imgui_showTestWindow ^= 1;
-        if (ImGui::Button("Another Window")) imgui_showAnotherWindow ^= 1;
-        ImGui::Separator();
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        ImGui::Text("Frame dt = %.8f sec", frame_dt);
-    }
+    if(ImGui::Begin("Tools")){
+        if(ImGui::CollapsingHeader("Camera")){
+            ImGui::RadioButton("Yaw", &cameraOptionRadio, 0); ImGui::SameLine();
+            ImGui::RadioButton("Pitch", &cameraOptionRadio, 1); ImGui::SameLine();
+            ImGui::RadioButton("Roll", &cameraOptionRadio, 2);
 
-    // 2. Show another simple window, this time using an explicit Begin/End pair
-    if (imgui_showAnotherWindow){
-        ImGui::SetNextWindowSize(ImVec2(200,100), ImGuiSetCond_FirstUseEver);
-        ImGui::Begin("Another Window", &imgui_showAnotherWindow);
-        ImGui::Text("Hello");
+            if(ImGui::Button("Reset View")){
+                camera.resetView();
+            }
+        }
         ImGui::End();
     }
 
-    // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
-    if (imgui_showTestWindow){
-        ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
-        ImGui::ShowTestWindow(&imgui_showTestWindow);
-    }
+    line.draw();
+    bill.draw();
 
-    // line.draw();
-    hex.draw();
     checkForGLErrors("MainWindow::draw()");
 }//====================================================
 
 void MainWindow::handleMouseMoveEvent(double xpos, double ypos){
     Window::handleMouseMoveEvent(xpos, ypos);
 
-    // camera.processMouseMovement(xpos, ypos);
+    camera.processMouseMovement(xpos, ypos, cameraOptionRadio);
+}//====================================================
+
+void MainWindow::handleMouseButtonEvent(int button, int action, int mods){
+    Window::handleMouseButtonEvent(button, action, mods);
+
+    camera.processMouseButton(button, action, mods);
+
+    // See if the user clicked on an object
+
+    // Convert all clickable points to screen coordinates
+    const std::vector<float>& worldPts = line.getPointsRef();
+    std::vector<double> screenPts (worldPts.size(), 0);
+
+    for(unsigned int p = 0; p < worldPts.size()/3; p++){
+        glm::vec4 worldPt(worldPts[3*p+0], worldPts[3*p+1], worldPts[3*p+2], 1);
+        
+        // Project the world point into screen space (centered at (0,0), extents of [-1, 1] in both directions)
+        glm::vec4 screenPt = projection*view*worldPt;
+
+        // Shift the origin to the top-left corner
+        // Scale by 1/2 so that entire screen has width and height of 1
+        // Multiply by width or height to convert to pixels
+        // Offset equal to the viewport offset
+        screenPt.x = (screenPt.x/screenPt.w + 1.0)/2.0 * width + viewOffset.x;
+        screenPt.y = (1.0 - screenPt.y/screenPt.w)/2.0 * height + viewOffset.y;
+
+        screenPts[3*p+0] = screenPt[0];
+        screenPts[3*p+1] = screenPt[1];
+        screenPts[3*p+2] = 0;
+    }
+
+    // saveMatrixToFile("../data/debug/screenPts.mat", "Points", screenPts, screenPts.size()/3, 3);
+    printf("Mouse Pos = [%.2f, %.2f]\n", mouse_lastX, mouse_lastY);
+    // See if mouse intersects any of the clickable screen coordinates
+}//====================================================
+
+void MainWindow::handleWindowSizeEvent(int w, int h){
+    Window::handleWindowSizeEvent(w, h);
+
+    camera.setScreenProperties(0,0,w,h);
 }//====================================================
 
 }// END of gui namespace

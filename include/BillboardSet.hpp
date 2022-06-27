@@ -1,15 +1,15 @@
 /**
- *  @file Polyline.hpp
- *	@brief A demo window with some objects to test out functionaltiy
+ *  @file BillboardSet.hpp
+ *	@brief 
  *
  *	@author Andrew Cox
- *	@version September 24, 2016
+ *	@version April 18, 2017
  *	@copyright GNU GPL v3.0
  */
  
 /*
  *	Astrohelion 
- *	Copyright 2016, Andrew Cox; Protected under the GNU GPL v3.0
+ *	Copyright 2017, Andrew Cox; Protected under the GNU GPL v3.0
  *	
  *	This file is part of Astrohelion
  *
@@ -34,33 +34,22 @@
 namespace astrohelion{
 namespace gui{
 
-class Polyline{
+class BillboardSet{
 public:
-	Polyline();
-	Polyline(std::vector<float>);
+	BillboardSet();
+	BillboardSet(std::vector<float> points, std::vector<float> colors);
 
-	void createFromPoints(std::vector<float>);
-
+	void init();
 	void draw();
-
-	const std::vector<float>& getPointsRef();
-	
-	void setColor(float, float, float, float);
-	void setThickness(float);
 protected:
 
 	std::vector<float> points {};
-	std::vector<float> vertices {};
-	std::vector<unsigned int> indices {};
+	std::vector<float> vertexData {};
+	std::vector<float> colors {};
 
-	float thickness = 7.f;
-	float miterLimit = 0.75f;
-
-	float color[4] = {0.9, 0.9, 0.9, 1.0};
-
-	unsigned int VAO = 0;
-	unsigned int VBO = 0;
-	unsigned int EBO = 0;
+	unsigned int numPoints = 0;		//!< Number of points
+	unsigned int VAO = 0;			//!< Vertex array object
+	unsigned int VBO = 0;			//!< Vertex buffer object
 };
 
 }	// End of astrohelion namespace

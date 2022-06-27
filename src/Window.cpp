@@ -40,8 +40,6 @@
 	#include <GLFW/glfw3native.h>
 #endif
 
-#include <glm/glm.hpp>
-
 #include "App.hpp"
 #include "ResourceManager.hpp"
 #include "Shader.hpp"
@@ -161,7 +159,7 @@ void Window::create(const char* title, GLFWmonitor* pMonitor, Window* share){
 	}
 
 	glfwGetFramebufferSize(pWindow, &bufferWidth, &bufferHeight);
-    glViewport(0, 0, bufferWidth, bufferHeight);	// make the buffer take up the entire screen
+    glViewport(viewOffset.x, viewOffset.y, bufferWidth, bufferHeight);	// make the buffer take up the entire screen
 
     // Initialize Event Callbacks: Use Lambda functions instead of static functions declared somewhere global
 

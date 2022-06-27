@@ -1,5 +1,5 @@
 /**
- *  @file Polyline.hpp
+ *  @file Shape.hpp
  *	@brief A demo window with some objects to test out functionaltiy
  *
  *	@author Andrew Cox

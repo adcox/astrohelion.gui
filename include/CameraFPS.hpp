@@ -24,7 +24,6 @@
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
 
 namespace astrohelion{
 namespace gui{
@@ -55,35 +54,48 @@ class CameraFPS{
 
 public:
     
-    CameraFPS(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-            GLfloat yaw = -90.0f,
-            GLfloat pitch = 0.0f);
+    CameraFPS(glm::vec3 position = glm::vec3(0.0f, 0.0f, 3.0f),
+            glm::vec3 target = glm::vec3(0.f, 0.f, 0.f),
+            glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f));
 
+    void getViewMatrix(glm::mat4*) const;
     glm::mat4 getViewMatrix() const;
     GLfloat getZoom() const;
 
+    void setScreenProperties(float, float, float, float);
+    void resetView();
+
     void processKeyboard(CamMove_tp, GLfloat);
-    void processMouseMovement(GLfloat, GLfloat, GLboolean constrainPitch = true);
+    void processMouseButton(int, int, int);
+    void processMouseMovement(GLfloat, GLfloat, int);
     void processMouseScroll(GLfloat);
 
 protected:
     // Camera Attributes
     glm::vec3 position;     //!< Position of the camera in world coordinates
+    glm::vec3 target;       //!< Position of object camera is looking at in world coordinates
     glm::vec3 front = glm::vec3(0.0f, 0.0f, -1.0f);     //!< Direction camera is pointing, unit vector
     glm::vec3 up;           //!< The up direction from the camera's point of view, unit vector
     glm::vec3 right;        //!< The right direction from the camera's point of view, unit vector
-    glm::vec3 worldUp;      //!< The up direction for the world, unit vector
+
+    glm::vec3 front_default;   //!< Default front direction
+    glm::vec3 up_default;      //!< Default "up" direction
+    glm::vec3 right_default;   //!< Default "right" direction
     
-    // Euler Angles
-    GLfloat yaw = -90.0f;       //!< Camera yaw angle, degrees
-    GLfloat pitch = 0.0f;       //!< Camera pitch angle, degrees
+    // Screen stuff
+    float screenX = 0;  // x-coordinate of camera view area (bottom-left?)
+    float screenY = 0;  // y-coordinate of camera view area
+    float screenW = 0;  // width of camera view area
+    float screenH = 0;  // height of camera view area
 
     // Camera options
-    GLfloat moveSpeed = 3.0f;           //!< Camera movement speed, pixels per frame
-    GLfloat mouseSensitivity = 0.25f;   //!< Scale mouse movement speed
-    GLfloat mouseScrollScale = 0.075;   //!< Multiple scroll update by this value to adjust speed
-    GLfloat zoom = 45.0f;       //!< Zoom level, corresponds to field of view, degrees
+    float moveSpeed = 3.0f;           //!< Camera movement speed, pixels per frame
+    float mouseSensitivity = 0.025f;   //!< Scale mouse movement speed
+    float mouseScrollScale = 0.075;   //!< Multiple scroll update by this value to adjust speed
+    float zoom = 45.0f;       //!< Zoom level, corresponds to field of view, degrees
+
+    bool bMousePressed[3] = {false};    //!< Flags describing which buttons are pressed
+    float mousePrevPos[2] = {-1};      //!< Mouse position on screen last frame
 
     void updateCameraVectors();
 };

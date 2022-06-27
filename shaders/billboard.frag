@@ -2,7 +2,6 @@
 
 // Vertex data from the geometry shader
 in VertexData{
-    vec2 mTexCoord;
     vec4 mColor;
 } VertexIn;
 

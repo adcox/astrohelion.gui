@@ -37,7 +37,7 @@ CFLAGS += -ggdb -W -Wall -Wextra -Weffc++ -pedantic
 # CFLAGS += -O3 -W -Wall -Wextra -Weffc++ -pedantic
 
 # Library names and locations
-LDFLAGS += -L $(LIB)
+LDFLAGS += -L$(LIB) -L/opt/local/lib
 LIBS = glfw3 GLEW SOIL freetype astrohelion
 LDFLAGS += $(foreach lib, $(LIBS),-l$(lib))
 

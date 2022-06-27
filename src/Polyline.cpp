@@ -51,6 +51,10 @@ Polyline::Polyline(std::vector<float> pts){
 	createFromPoints(pts);
 }//====================================================
 
+/**
+ *  \brief Create a line from a set of points
+ *  \param pts Points (in world coordinates) that make up a line
+ */
 void Polyline::createFromPoints(std::vector<float> pts){
 	if(pts.size() < 2*3)
 		throw std::runtime_error("Cannot create a polyline with fewer than two points");
@@ -147,7 +151,7 @@ void Polyline::createFromPoints(std::vector<float> pts){
     glEnableVertexAttribArray(0);
 
     // Location 1: Color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 7*sizeof(GL_FLOAT), (GLvoid*)(3*sizeof(GLfloat)));
+    glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7*sizeof(GL_FLOAT), (GLvoid*)(3*sizeof(GLfloat)));
     glEnableVertexAttribArray(1);
 
     glBindBuffer(GL_ARRAY_BUFFER, 0);   // Note that this is allowed, the call to glVertexAttribPointer registered VBO as the currently bound vertex buffer object so afterwards we can safely unbind
@@ -158,12 +162,12 @@ void Polyline::draw(){
 	Shader shader = GLOBAL_APP->getResMan()->getShader("line_thick");
 	shader.setFloat("thickness", thickness, true);
 	shader.setFloat("miterLimit", miterLimit);
-	// shader.setVector2f("viewportSize", width, height);
-	// shader.setMatrix4("modelViewProjectionMatrix", modelViewProj, true);
 	glBindVertexArray(VAO);
 	glDrawElements(GL_LINES_ADJACENCY, 4*(points.size()+2), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }//====================================================
+
+const std::vector<float>& Polyline::getPointsRef(){ return points; }
 
 void Polyline::setColor(float r, float g, float b, float a){}
 
@@ -173,5 +177,11 @@ void Polyline::setColor(float r, float g, float b, float a){}
  */
 void Polyline::setThickness(float t){ thickness = t; }
 
-}	// End of astrohelion namespace
 }	// End of gui namespace
+}	// End of astrohelion namespace
+
+
+
+
+
+

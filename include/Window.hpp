@@ -22,6 +22,7 @@
 
 #include "GL/glew.h"	// This header must be included BEFORE glfw3
 #include "GLFW/glfw3.h"
+#include <glm/glm.hpp>
 
 #include <string>
 
@@ -87,6 +88,8 @@ protected:
 
 	int width = 1280;					//!< Window width, pixels
 	int height = 720;					//!< Window height, pixels
+
+	glm::vec2 viewOffset = glm::vec2(0,0);	//!< Offset of viewport, pixels
 	int bufferWidth = 1280;				//!< Width of the frame buffer, pixels
 	int bufferHeight = 720;				//!< Height of the frame buffer, pixels
 
@@ -101,6 +104,8 @@ protected:
 	GLfloat mouse_scrollXOffset = 0;	//!< Mouse x-offset (scroll) from previous frame, pixels
 	GLfloat mouse_scrollYOffset = 0;	//!< Mouse y-offset (scroll) from previous frame, pixels
 
+	glm::mat4 view = glm::mat4(1.0);			//!< View matrix, initialized as identity
+	glm::mat4 projection = glm::mat4(1.0);		//!< Projection Matrix, initialized as identity
 
 	unsigned int imgui_VBO = 0;		//!< Vertex Buffer Object for ImGui stuff
 	unsigned int imgui_VAO = 0;		//!< Vertex Array Object for ImGui stuff
